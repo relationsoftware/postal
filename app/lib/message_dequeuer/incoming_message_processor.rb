@@ -34,6 +34,11 @@ module MessageDequeuer
       return unless queued_message.message.bounce
 
       log "message is a bounce"
+
+      # Determine bounce type from the raw message content
+      bounce_type = determine_bounce_type(queued_message.message.raw_message)
+      queued_message.message.update(bounce_type: bounce_type) if bounce_type
+
       original_messages = queued_message.message.original_messages
       unless original_messages.empty?
         queued_message.message.original_messages.each do |orig_msg|
@@ -55,6 +60,29 @@ module MessageDequeuer
       create_delivery "HardFail", details: "This message was a bounce but we couldn't link it with any outgoing message and there was no route for it."
       remove_from_queue
       stop_processing
+    end
+
+    def determine_bounce_type(raw_message)
+      return nil if raw_message.blank?
+
+      # Check for soft bounce indicators (temporary failures)
+      soft_bounce_patterns = [
+        /4\d{2}\s/,                           # 4xx status codes
+        /temporarily\s+rejected/i,
+        /try\s+again\s+later/i,
+        /mailbox\s+full/i,
+        /over\s+quota/i,
+        /too\s+many\s+connections/i,
+        /service\s+unavailable/i,
+        /temporarily\s+deferred/i
+      ]
+
+      soft_bounce_patterns.each do |pattern|
+        return "soft" if raw_message.match?(pattern)
+      end
+
+      # Default to hard bounce for permanent failures
+      "hard"
     end
 
     def inspect_message

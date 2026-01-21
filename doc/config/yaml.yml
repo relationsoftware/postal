@@ -268,4 +268,8 @@ oidc:
   # The user info endpoint on the authorization server (only used when discovery is false)
   userinfo_endpoint: 
   # The JWKS endpoint on the authorization server (only used when discovery is false)
-  jwks_uri: 
+  jwks_uri:
+
+listmonk:
+  # The source identifier to use in Listmonk webhook payloads
+  source: postal 

@@ -118,3 +118,4 @@ This document contains all the environment variables which are available for thi
 | `OIDC_TOKEN_ENDPOINT` | String | The token endpoint on the authorization server (only used when discovery is false) |  |
 | `OIDC_USERINFO_ENDPOINT` | String | The user info endpoint on the authorization server (only used when discovery is false) |  |
 | `OIDC_JWKS_URI` | String | The JWKS endpoint on the authorization server (only used when discovery is false) |  |
+| `LISTMONK_SOURCE` | String | The source identifier to use in Listmonk webhook payloads | postal |

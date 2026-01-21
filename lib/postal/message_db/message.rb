@@ -458,7 +458,8 @@ module Postal
           timestamp: timestamp.to_f,
           spam_status: spam_status,
           tag: tag,
-          headers: headers
+          headers: headers,
+          bounce_type: bounce_type
         }
       end
 

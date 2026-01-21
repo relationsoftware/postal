@@ -25,11 +25,46 @@ class WebhookDeliveryService
   private
 
   def generate_payload
-    @payload = {
+    output_style = @webhook_request.webhook&.output_style || "postal"
+
+    if output_style == "listmonk"
+      @payload = generate_listmonk_payload
+    else
+      @payload = generate_postal_payload
+    end
+  end
+
+  def generate_postal_payload
+    {
       event: @webhook_request.event,
       timestamp: @webhook_request.created_at.to_f,
       payload: @webhook_request.payload,
       uuid: @webhook_request.uuid
+    }.to_json
+  end
+
+  def generate_listmonk_payload
+    event = @webhook_request.event
+    payload = @webhook_request.payload
+
+    unless event == "MessageBounced"
+      raise Postal::Error, "Unsupported event '#{event}' for output style 'listmonk'"
+    end
+
+    # Handle both symbol and string keys
+    bounce = payload[:bounce] || payload["bounce"] || {}
+    original_message = payload[:original_message] || payload["original_message"] || {}
+
+    bounce_type = bounce[:bounce_type] || bounce["bounce_type"]
+    email = original_message[:to] || original_message["to"]
+
+    # Default to "hard" if bounce_type is not "soft"
+    type = bounce_type == "soft" ? "soft" : "hard"
+
+    {
+      email: email,
+      source: Postal::Config.listmonk.source.presence || "postal",
+      type: type
     }.to_json
   end
 

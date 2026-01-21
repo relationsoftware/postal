@@ -24,6 +24,14 @@
           webhook deliveries, they will still be completed even if disabled.
 
     .fieldSet__field
+      = f.label :output_style, 'Output Style', :class => 'fieldSet__label'
+      .fieldSet__input
+        = f.select :output_style, [["Postal (default)", "postal"], ["Listmonk (bounce events only)", "listmonk"]], {},:class => 'input input--select'
+        %p.fieldSet__text
+          Choose the output format for webhook payloads. Use <b>Listmonk</b> if you want to integrate with Listmonk's bounce webhook endpoint.
+          Note: Listmonk format only supports MessageBounced events.
+
+    .fieldSet__field
       = f.label :all_events, 'Events', :class => 'fieldSet__label'
       .fieldSet__input
         = hidden_field_tag 'webhook[events][]'

@@ -624,6 +624,13 @@ module Postal
         description "The JWKS endpoint on the authorization server (only used when discovery is false)"
       end
     end
+
+    group :listmonk do
+      string :source do
+        description "The source identifier to use in Listmonk webhook payloads"
+        default "postal"
+      end
+    end
   end
 
   class << self
