@@ -116,6 +116,10 @@ module Postal
         description "When de-queuing in batches, use this limit for the batch size"
         default 100
       end
+
+      string :admin_api_key do
+        description "The API key for the Admin API. If not set, the Admin API will be disabled."
+      end
     end
 
     group :web_server do

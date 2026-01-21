@@ -7,6 +7,67 @@ Rails.application.routes.draw do
   match "/api/v1/messages/message" => "legacy_api/messages#message", via: [:get, :post, :patch, :put]
   match "/api/v1/messages/deliveries" => "legacy_api/messages#deliveries", via: [:get, :post, :patch, :put]
 
+  # Admin API v2 Routes
+  namespace :admin_api, path: "api/v2/admin" do
+    # Users (global)
+    resources :users, only: [:index, :show, :create, :update, :destroy]
+
+    # IP Pools (global)
+    resources :ip_pools, only: [:index, :show, :create, :update, :destroy] do
+      resources :ip_addresses, only: [:index, :show, :create, :update, :destroy]
+    end
+
+    # Organizations
+    resources :organizations, only: [:index, :show, :create, :update, :destroy] do
+      # Organization Users
+      resources :users, controller: "organization_users", only: [:index, :show, :update, :destroy] do
+        collection do
+          post :add
+        end
+      end
+
+      # Servers
+      resources :servers, only: [:index, :show, :create, :update, :destroy] do
+        member do
+          post :suspend
+          post :unsuspend
+        end
+
+        # Server resources
+        resources :domains, only: [:index, :show, :create, :update, :destroy] do
+          member do
+            post :verify
+            post :check
+          end
+        end
+        resources :credentials, only: [:index, :show, :create, :update, :destroy]
+        resources :routes, only: [:index, :show, :create, :update, :destroy]
+        resources :http_endpoints, only: [:index, :show, :create, :update, :destroy]
+        resources :smtp_endpoints, only: [:index, :show, :create, :update, :destroy]
+        resources :address_endpoints, only: [:index, :show, :create, :update, :destroy]
+        resources :webhooks, only: [:index, :show, :create, :update, :destroy] do
+          member do
+            post :enable
+            post :disable
+          end
+        end
+        resources :track_domains, only: [:index, :show, :create, :update, :destroy] do
+          member do
+            post :check
+          end
+        end
+        resources :messages, only: [:index, :show] do
+          member do
+            post :retry
+            post :cancel_hold
+            delete :queue, action: :remove_from_queue
+          end
+        end
+        resources :suppressions, only: [:index, :create, :destroy]
+      end
+    end
+  end
+
   scope "org/:org_permalink", as: "organization" do
     resources :domains, only: [:index, :new, :create, :destroy] do
       match :verify, on: :member, via: [:get, :post]
