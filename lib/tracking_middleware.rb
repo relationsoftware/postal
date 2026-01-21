@@ -84,13 +84,15 @@ class TrackingMiddleware
     end
 
     time = Time.now.to_f
+    # Truncate user_agent to 255 characters to avoid database errors
+    truncated_user_agent = request.user_agent.to_s[0, 255]
     if link["message_id"]
       message_db.update(:messages, { clicked: time }, where: { id: link["message_id"] })
       message_db.insert(:clicks, {
         message_id: link["message_id"],
         link_id: link["id"],
         ip_address: request.ip,
-        user_agent: request.user_agent,
+        user_agent: truncated_user_agent,
         timestamp: time
       })
 
@@ -101,7 +103,7 @@ class TrackingMiddleware
           url: link["url"],
           token: link["token"],
           ip_address: request.ip,
-          user_agent: request.user_agent
+          user_agent: truncated_user_agent
         })
       rescue Postal::MessageDB::Message::NotFound
         # If we can't find the message that this link is associated with, we'll just ignore it

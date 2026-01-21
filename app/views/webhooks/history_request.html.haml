@@ -15,20 +15,27 @@
     %dt UUID
     %dd= @req.uuid
 
-    %dt Timestamp
-    %dd= @req.timestamp.strftime("%d/%m/%Y at %H:%M:%S")
-    %dt HTTP Status Code
-    %dd
-      %span.label.label--large{:class => "label--http-status-#{@req.status_code.to_s[0,1]}"}= @req.status_code
-
-    %dt Attempt
-    %dd
-      = @req.attempt
-      - if @req.will_retry?
-        (will be retried)
-
   %p.pageContent__title Payload
   %pre.codeBlock.u-margin.codeBlock--whitespace~ preserve @req.pretty_payload
-  %p.pageContent__title Response Body
-  %pre.codeBlock.u-margin= @req.body
+
+  - if @requests.size > 1
+    %p.pageContent__title All Attempts (#{@requests.size})
+  - else
+    %p.pageContent__title Attempt Details
+
+  - @requests.each do |req|
+    .u-margin
+      %h4
+        Attempt #{req.attempt}
+        - if req.will_retry?
+          %span.label.label--warning (will be retried)
+      %dl.pageContent__definitions
+        %dt Timestamp
+        %dd= req.timestamp.strftime("%d/%m/%Y at %H:%M:%S")
+        %dt HTTP Status Code
+        %dd
+          %span.label.label--large{:class => "label--http-status-#{req.status_code.to_s[0,1]}"}= req.status_code
+      %p.pageContent__title Response Body
+      %pre.codeBlock= req.body
+
   %p.u-margin= link_to "Back to history", [:history, organization, @server, :webhooks], :class => "button button--neutral"

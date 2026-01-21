@@ -23,6 +23,13 @@ module Postal
         Request.new(request)
       end
 
+      def find_all_attempts(uuid)
+        requests = @database.select(:webhook_requests, where: { uuid: uuid }, order: :attempt, direction: "asc")
+        raise RequestNotFound, "No request found with UUID '#{uuid}'" if requests.empty?
+
+        requests.map { |r| Request.new(r) }
+      end
+
       def prune
         return unless last = @database.select(:webhook_requests, where: { timestamp: { less_than: 10.days.ago.to_f } }, order: "timestamp", direction: "desc", limit: 1, fields: ["id"]).first
 

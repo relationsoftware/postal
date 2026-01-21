@@ -3,7 +3,7 @@
 module Postal
   class MessageParser
 
-    URL_REGEX = /(?<url>(?<protocol>https?):\/\/(?<domain>[A-Za-z0-9\-.:]+)(?<path>\/[A-Za-z0-9.\/+?&\-_%=~:;()\[\]#]*)?+)/
+    URL_REGEX = /(?<url>(?<protocol>https?):\/\/(?<domain>[A-Za-z0-9\-.:]+)(?<path>\/[A-Za-z0-9.\/+?&\-_%=~:;()\[\]#\p{L}]*)?+)/u
 
     def initialize(message)
       @message = message
@@ -12,8 +12,7 @@ module Postal
       @tracked_images = 0
       @domain = @message.server.track_domains.where(domain: @message.domain, dns_status: "OK").first
 
-      return unless @domain
-
+      # Always process the message to remove +notrack, even if tracking is not available
       @parsed_output = generate.split("\r\n\r\n", 2)
     end
 
@@ -25,11 +24,11 @@ module Postal
     end
 
     def new_body
-      @parsed_output[1]
+      @parsed_output&.dig(1)
     end
 
     def new_headers
-      @parsed_output[0]
+      @parsed_output&.dig(0)
     end
 
     private
@@ -37,6 +36,12 @@ module Postal
     def generate
       @mail = Mail.new(@message.raw_message)
       @original_message = @message.raw_message
+
+      # Skip tracking for S/MIME signed or encrypted messages to preserve signatures
+      if signed_or_encrypted_message?
+        return @original_message
+      end
+
       if @mail.parts.empty?
         if @mail.mime_type
           if @mail.mime_type =~ /text\/plain/
@@ -65,6 +70,20 @@ module Postal
       @original_message
     end
 
+    def signed_or_encrypted_message?
+      content_type = @mail.content_type.to_s.downcase
+      # Check for S/MIME signatures and encryption
+      return true if content_type.include?("pkcs7-mime")
+      return true if content_type.include?("pkcs7-signature")
+      return true if content_type.include?("x-pkcs7-mime")
+      return true if content_type.include?("x-pkcs7-signature")
+      # Check for PGP/MIME
+      return true if content_type.include?("multipart/signed")
+      return true if content_type.include?("multipart/encrypted")
+
+      false
+    end
+
     def parse_parts(parts)
       parts.each do |part|
         case part.content_type
@@ -80,18 +99,24 @@ module Postal
           unless part.parts.empty?
             parse_parts(part.parts)
           end
+        when /multipart\/signed/, /application\/pkcs7-mime/, /application\/pkcs7-signature/, /application\/x-pkcs7-mime/, /application\/x-pkcs7-signature/
+          # Skip S/MIME and PGP signed content to preserve signatures
+          next
         end
       end
     end
 
     def parse(part, type = nil)
-      if @domain.track_clicks?
+      if @domain&.track_clicks?
         part = insert_links(part, type)
       end
 
-      if @domain.track_loads? && type == :html
+      if @domain&.track_loads? && type == :html
         part = insert_tracking_image(part)
       end
+
+      # Always remove +notrack from URLs, even if tracking is not available
+      part = remove_notrack(part)
 
       part
     end
@@ -127,11 +152,14 @@ module Postal
         end
       end
 
+      part
+    end
+
+    def remove_notrack(part)
       part.gsub!(/(https?)\+notrack:\/\//) do
         @actioned = true
         "#{::Regexp.last_match(1)}://"
       end
-
       part
     end
 

@@ -42,7 +42,8 @@ class WebhooksController < ApplicationController
   end
 
   def history_request
-    @req = @server.message_db.webhooks.find(params[:uuid])
+    @requests = @server.message_db.webhooks.find_all_attempts(params[:uuid])
+    @req = @requests.first
   end
 
   private

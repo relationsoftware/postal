@@ -8,12 +8,14 @@ module Postal
     attr_reader :spam_checks
     attr_accessor :threat
     attr_accessor :threat_message
+    attr_accessor :inspection_error
 
     def initialize(message, scope)
       @message = message
       @scope = scope
       @spam_checks = []
       @threat = false
+      @inspection_error = false
     end
 
     def spam_score
@@ -26,6 +28,10 @@ module Postal
       MessageInspector.inspectors.each do |inspector|
         inspector.inspect_message(self)
       end
+    end
+
+    def successful?
+      !@inspection_error
     end
 
     class << self

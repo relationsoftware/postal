@@ -40,7 +40,10 @@
             .routeList__details
               %p.routeList__endpoint{:class => "routeList__endpoint--#{route.endpoint_type&.underscore || 'none'}"}
                 - if route.mode == 'Endpoint'
-                  = route.endpoint.description
+                  - if route.endpoint
+                    = route.endpoint.description
+                  - else
+                    %span.text-danger (Endpoint deleted)
                 - else
                   = t("route_modes.#{route.mode.underscore}")
               %p.routeList__spamMode= t("route_spam_modes.#{route.spam_mode.underscore}")

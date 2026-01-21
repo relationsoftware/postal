@@ -40,19 +40,22 @@ module Postal
       # Get a statistic (or statistics)
       #
       def get(type, counters, start_date = Time.now, quantity = 10)
-        start_date = start_date.utc
+        # Use UTC for database queries but convert to user's timezone for display
+        start_date_utc = start_date.utc
         items = quantity.times.each_with_object({}) do |i, hash|
-          hash[(start_date - i.send(STATS_GAPS[type])).send("beginning_of_#{STATS_GAPS[type]}").utc] = counters.each_with_object({}) do |c, h|
+          utc_time = (start_date_utc - i.send(STATS_GAPS[type])).send("beginning_of_#{STATS_GAPS[type]}").utc
+          hash[utc_time] = counters.each_with_object({}) do |c, h|
             h[c] = 0
           end
         end
         @database.select("stats_#{type}", where: { time: items.keys.map(&:to_i) }, fields: [:time] | counters).each do |data|
-          time = Time.zone.at(data.delete("time"))
+          time = Time.at(data.delete("time")).utc
           data.each do |key, value|
-            items[time][key.to_sym] = value
+            items[time][key.to_sym] = value if items.key?(time)
           end
         end
-        items.to_a.reverse
+        # Convert UTC times to user's timezone for display
+        items.map { |utc_time, values| [Time.zone.at(utc_time.to_i), values] }.reverse
       end
 
     end

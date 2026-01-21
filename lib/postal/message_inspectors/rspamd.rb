@@ -21,6 +21,7 @@ module Postal
         end
       rescue Error => e
         inspection.spam_checks << SpamCheck.new("ERROR", 0, e.message)
+        inspection.inspection_error = true
       end
 
       private

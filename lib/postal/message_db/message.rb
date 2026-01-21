@@ -310,20 +310,30 @@ module Postal
       # Return the plain body for this message
       #
       def plain_body
-        mail&.plain_body
+        body = mail&.plain_body
+        return nil if body.nil?
+
+        # Force UTF-8 encoding to avoid incompatible character encoding errors
+        body.encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
       end
 
       #
       # Return the HTML body for this message
       #
       def html_body
-        mail&.html_body
+        body = mail&.html_body
+        return nil if body.nil?
+
+        # Force UTF-8 encoding to avoid incompatible character encoding errors
+        body.encode("UTF-8", invalid: :replace, undef: :replace, replace: "")
       end
 
       #
       # Return the HTML body with any tracking links
       #
       def html_body_without_tracking_image
+        return "" if html_body.nil?
+
         html_body.gsub(/<p class=['"]ampimg['"].*?<\/p>/, "")
       end
 
@@ -487,12 +497,14 @@ module Postal
       #
       def create_load(request)
         update("loaded" => Time.now.to_f) if loaded.nil?
-        database.insert(:loads, { message_id: id, ip_address: request.ip, user_agent: request.user_agent, timestamp: Time.now.to_f })
+        # Truncate user_agent to 255 characters to avoid database errors
+        truncated_user_agent = request.user_agent.to_s[0, 255]
+        database.insert(:loads, { message_id: id, ip_address: request.ip, user_agent: truncated_user_agent, timestamp: Time.now.to_f })
 
         WebhookRequest.trigger(server, "MessageLoaded", {
           message: webhook_hash,
           ip_address: request.ip,
-          user_agent: request.user_agent
+          user_agent: truncated_user_agent
         })
       end
 
@@ -543,8 +555,14 @@ module Postal
       def inspect_message
         result = MessageInspection.scan(self, scope&.to_sym)
 
-        # Update the messages table with the results of our inspection
-        update(inspected: true, spam_score: result.spam_score, threat: result.threat, threat_details: result.threat_message)
+        # Only mark as inspected if the inspection was successful (no errors/timeouts)
+        # This ensures messages aren't incorrectly marked as "not spam" when inspection failed
+        update(
+          inspected: result.successful?,
+          spam_score: result.spam_score,
+          threat: result.threat,
+          threat_details: result.threat_message
+        )
 
         # Add any spam details into the spam checks database
         database.insert_multi(:spam_checks, [:message_id, :code, :score, :description], result.spam_checks.map { |d| [id, d.code, d.score, d.description] })

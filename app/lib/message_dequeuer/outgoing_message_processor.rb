@@ -149,6 +149,9 @@ module MessageDequeuer
     def add_recipient_to_suppression_list_on_too_many_hard_fails
       return unless @result.type == "HardFail"
 
+      # Check if already on suppression list to avoid duplicate entries from concurrent processing
+      return if queued_message.server.message_db.suppression_list.get(:recipient, queued_message.message.rcpt_to)
+
       recent_hard_fails = queued_message.server.message_db.select(:messages,
                                                                   where: {
                                                                     rcpt_to: queued_message.message.rcpt_to,
