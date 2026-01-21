@@ -170,8 +170,6 @@ class MessagesController < ApplicationController
             options[:direction] = "asc"
           end
 
-          options[:where][:rcpt_to] = qs[:to] if qs[:to]
-          options[:where][:mail_from] = qs[:from] if qs[:from]
           options[:where][:status] = qs[:status] if qs[:status]
           options[:where][:token] = qs[:token] if qs[:token]
 
@@ -179,6 +177,15 @@ class MessagesController < ApplicationController
             options[:where][:message_id] = qs[:msgid]
             options[:where].delete(:spam)
             options[:where].delete(:scope)
+          end
+          [[:subject, :subject], [:to, :rcpt_to], [:from, :mail_from]].each do |qs_key, where_key|
+            if qs[qs_key]
+              if qs[qs_key].include?('%')
+                options[:where][where_key] = { like: qs[qs_key] }
+              else
+                options[:where][where_key] = qs[qs_key]
+              end
+            end
           end
           options[:where][:tag] = qs[:tag] if qs[:tag]
           options[:where][:id] = qs[:id] if qs[:id]
