@@ -77,6 +77,12 @@ class Server < ApplicationRecord
   validates :name, presence: true, uniqueness: { scope: :organization_id, case_sensitive: false }
   validates :mode, inclusion: { in: MODES }
   validates :permalink, presence: true, uniqueness: { scope: :organization_id, case_sensitive: false }, format: { with: /\A[a-z0-9-]*\z/ }, exclusion: { in: RESERVED_PERMALINKS }
+  validates :priority, presence: true, numericality: {
+    only_integer: true,
+    greater_than_or_equal_to: 0,
+    less_than_or_equal_to: 32767,
+    message: "must be a whole number between 0 and 32,767"
+  }
   validate :validate_ip_pool_belongs_to_organization
 
   before_validation(on: :create) do
