@@ -341,7 +341,22 @@ module Postal
       # Return all attachments for this message
       #
       def attachments
-        mail&.attachments || []
+        return [] unless mail
+
+        # If the message has parts, return attachments from parts
+        return mail.attachments if mail.attachments.any?
+
+        # If the message is not multipart but has an attachment content-type,
+        # treat the entire body as an attachment
+        if mail.parts.empty? && mail.content_type.present?
+          content_type = mail.content_type.to_s.downcase
+          # Check if this is an attachment (not text/plain or text/html)
+          unless content_type.start_with?("text/plain", "text/html", "multipart/")
+            return [mail]
+          end
+        end
+
+        []
       end
 
       #
@@ -614,7 +629,14 @@ module Postal
       # Should this message be parsed?
       #
       def should_parse?
-        parsed? == false && headers["x-amp"] != "skip"
+        return false if parsed?
+
+        # Check if X-AMP header is set to "skip" (headers returns an array)
+        x_amp_header = headers["x-amp"]
+        return false if x_amp_header.is_a?(Array) && x_amp_header.any? { |v| v.to_s.downcase.strip == "skip" }
+        return false if x_amp_header.to_s.downcase.strip == "skip"
+
+        true
       end
 
       private

@@ -25,11 +25,17 @@ class Credential < ApplicationRecord
 
   TYPES = %w[SMTP API SMTP-IP].freeze
 
-  validates :key, presence: true, uniqueness: { case_sensitive: false }
+  validates :key, presence: true
+  validates :key, uniqueness: { case_sensitive: false }, unless: :smtp_ip?
+  validates :key, uniqueness: { scope: :server_id, case_sensitive: false }, if: :smtp_ip?
   validates :type, inclusion: { in: TYPES }
   validates :name, presence: true
   validate :validate_key_cannot_be_changed
   validate :validate_key_for_smtp_ip
+
+  def smtp_ip?
+    type == "SMTP-IP"
+  end
 
   serialize :options, type: Hash
 
