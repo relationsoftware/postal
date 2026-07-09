@@ -5,7 +5,7 @@ class TestLogger
   def initialize
     @log_lines = []
     @group_set = Klogger::GroupSet.new
-    @print = false
+    @print = ENV["TLOG"] == "1"
   end
 
   def print!

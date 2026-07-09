@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module AdminAPI
-  class IpAddressesController < BaseController
+  class IPAddressesController < BaseController
 
     before_action :find_ip_pool
     before_action :find_ip_address, only: [:show, :update, :destroy]

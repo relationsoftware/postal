@@ -60,6 +60,7 @@ group :test do
   gem "database_cleaner-active_record"
   gem "factory_bot_rails"
   gem "rspec"
+  gem "rspec-openapi"
   gem "rspec-rails"
   gem "shoulda-matchers"
   gem "timecop"

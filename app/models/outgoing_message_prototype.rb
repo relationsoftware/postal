@@ -76,21 +76,21 @@ class OutgoingMessagePrototype
   def create_messages
     if valid?
       all_addresses.each_with_object({}) do |address, hash|
-        if address = Postal::Helpers.strip_name_from_address(address)
-          # Check for existing message if message_ids provided
-          message_id = @message_ids.is_a?(Hash) ? @message_ids[address] : nil
-          if message_id
-            # Strip angle brackets if present
-            message_id = message_id.gsub(/^<|>$/, '')
-            # Check for duplicate
-            existing = @server.message_db.select(:messages, fields: [:id, :token, :message_id], where: { message_id: message_id }).first
-            if existing
-              hash[address] = { id: existing["id"], token: existing["token"], message_id: existing["message_id"], existing: true }
-              next
-            end
+        next unless address = Postal::Helpers.strip_name_from_address(address)
+
+        # Check for existing message if message_ids provided
+        message_id = @message_ids.is_a?(Hash) ? @message_ids[address] : nil
+        if message_id
+          # Strip angle brackets if present
+          message_id = message_id.gsub(/^<|>$/, "")
+          # Check for duplicate
+          existing = @server.message_db.select(:messages, fields: [:id, :token, :message_id], where: { message_id: message_id }).first
+          if existing
+            hash[address] = { id: existing["id"], token: existing["token"], message_id: existing["message_id"], existing: true }
+            next
           end
-          hash[address] = create_message(address, message_id)
         end
+        hash[address] = create_message(address, message_id)
       end
     else
       false
@@ -120,8 +120,9 @@ class OutgoingMessagePrototype
 
   def valid_message_id_format?(message_id)
     return false if message_id.blank?
+
     # Strip angle brackets if present for validation
-    id = message_id.gsub(/^<|>$/, '')
+    id = message_id.gsub(/^<|>$/, "")
     # RFC 5322: local-part@domain (must have @ and both parts non-empty, no spaces)
     id.match?(/\A[^@\s]+@[^@\s]+\z/)
   end
@@ -168,7 +169,7 @@ class OutgoingMessagePrototype
     end
 
     if @message_ids.is_a?(Hash)
-      @message_ids.each do |recipient, message_id|
+      @message_ids.each do |_recipient, message_id|
         unless valid_message_id_format?(message_id)
           @errors << "InvalidMessageID" unless @errors.include?("InvalidMessageID")
           break
@@ -218,7 +219,7 @@ class OutgoingMessagePrototype
   def create_message(address, message_id = nil)
     # Use provided message_id or generate one
     msg_id = message_id || "#{SecureRandom.uuid}@#{Postal::Config.dns.return_path_domain}"
-    
+
     message = @server.message_db.new_message
     message.scope = "outgoing"
     message.rcpt_to = address

@@ -145,12 +145,32 @@ class Domain < ApplicationRecord
     "#{Postal::Config.dns.domain_verify_prefix} #{verification_token}"
   end
 
+  # TXT values we accept as proof of ownership. Some DNS providers don't allow a
+  # space in a TXT value, so customers sometimes publish the '=' separated form
+  # instead. Both prove ownership equally (the token is the secret) — the space
+  # separated form remains the one we display and recommend.
+  def acceptable_dns_verification_strings
+    prefix = Postal::Config.dns.domain_verify_prefix
+    [
+      "#{prefix} #{verification_token}",
+      "#{prefix}=#{verification_token}",
+    ]
+  end
+
+  def mx_record
+    "mx.#{Postal::Config.postal.web_hostname}"
+  end
+
+  def return_path_record
+    Postal::Config.dns.return_path_domain
+  end
+
   def verify_with_dns
     return false unless verification_method == "DNS"
 
     result = resolver.txt(name)
 
-    if result.include?(dns_verification_string)
+    if (result & acceptable_dns_verification_strings).any?
       self.verified_at = Time.now
       return save
     end

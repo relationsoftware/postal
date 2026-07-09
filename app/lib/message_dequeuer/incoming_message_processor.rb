@@ -67,14 +67,14 @@ module MessageDequeuer
 
       # Check for soft bounce indicators (temporary failures)
       soft_bounce_patterns = [
-        /4\d{2}\s/,                           # 4xx status codes
+        /4\d{2}\s/, # 4xx status codes
         /temporarily\s+rejected/i,
         /try\s+again\s+later/i,
         /mailbox\s+full/i,
         /over\s+quota/i,
         /too\s+many\s+connections/i,
         /service\s+unavailable/i,
-        /temporarily\s+deferred/i
+        /temporarily\s+deferred/i,
       ]
 
       soft_bounce_patterns.each do |pattern|

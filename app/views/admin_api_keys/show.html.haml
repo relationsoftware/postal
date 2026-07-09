@@ -1,0 +1,30 @@
+- page_title << "API Key Created"
+.pageHeader
+  %h1.pageHeader__title
+    Admin API Key Created
+
+.pageContent.pageContent--compact
+  .flash.flash--warning.u-margin
+    %p
+      %strong Please copy your API key now.
+      For security reasons, we cannot show it to you again.
+
+  .api-key-display.u-margin(style="background: #f4f7f9; border: 1px solid #ced4da; padding: 20px; border-radius: 8px; text-align: center;")
+    %p(style="font-size: 14px; color: #6c757d; margin-bottom: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;") Your API Key
+    %code(id="api-key-value" style="font-size: 24px; font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; color: #212529; word-break: break-all; display: block; margin: 10px 0;")
+      = @key.key
+    
+    %button.button.button--blue.u-margin-top(onclick="copyToClipboard()") Copy to Clipboard
+
+  %p.u-center.u-margin-top
+    = link_to "I've saved the key, take me back", admin_api_keys_path, :class => 'button button--positive'
+
+:javascript
+  function copyToClipboard() {
+    const key = document.getElementById('api-key-value').innerText;
+    navigator.clipboard.writeText(key).then(() => {
+      alert('API key copied to clipboard!');
+    }).catch(err => {
+      console.error('Failed to copy: ', err);
+    });
+  }

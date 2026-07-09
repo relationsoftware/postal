@@ -74,13 +74,25 @@ class Server < ApplicationRecord
   default_value :spam_threshold, -> { Postal::Config.postal.default_spam_threshold }
   default_value :spam_failure_threshold, -> { Postal::Config.postal.default_spam_failure_threshold }
 
-  validates :name, presence: true, uniqueness: { scope: :organization_id, case_sensitive: false }
+  # Uniqueness only among non-soft-deleted rows. soft_destroy just sets
+  # deleted_at — there's no purge job — so without this scope a tenant
+  # slug becomes permanently unusable after one delete/recreate cycle
+  # (find_by(.present) skips the tombstone but the unique check still
+  # sees it and the create 422s). Conditional uniqueness lets a new
+  # server take over the permalink while the tombstone keeps its history.
+  validates :name,
+            presence: true,
+            uniqueness: { scope: :organization_id, case_sensitive: false, conditions: -> { where(deleted_at: nil) } }
   validates :mode, inclusion: { in: MODES }
-  validates :permalink, presence: true, uniqueness: { scope: :organization_id, case_sensitive: false }, format: { with: /\A[a-z0-9-]*\z/ }, exclusion: { in: RESERVED_PERMALINKS }
+  validates :permalink,
+            presence: true,
+            uniqueness: { scope: :organization_id, case_sensitive: false, conditions: -> { where(deleted_at: nil) } },
+            format: { with: /\A[a-z0-9-]*\z/ },
+            exclusion: { in: RESERVED_PERMALINKS }
   validates :priority, presence: true, numericality: {
     only_integer: true,
     greater_than_or_equal_to: 0,
-    less_than_or_equal_to: 32767,
+    less_than_or_equal_to: 32_767,
     message: "must be a whole number between 0 and 32,767"
   }
   validate :validate_ip_pool_belongs_to_organization

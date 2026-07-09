@@ -101,7 +101,7 @@ RSpec.describe Webhook, type: :model do
   describe "#events=" do
     it "sets events to be saved" do
       webhook = create(:webhook, server: server)
-      webhook.events = ["MessageSent", "MessageBounced"]
+      webhook.events = %w[MessageSent MessageBounced]
       webhook.save!
 
       expect(webhook.reload.events).to contain_exactly("MessageSent", "MessageBounced")

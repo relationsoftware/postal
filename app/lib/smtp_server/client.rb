@@ -153,11 +153,30 @@ module SMTPServer
       transaction_reset
       @state = :welcomed
       increment_command_count("EHLO")
-      [
-        "250-My capabilities are",
-        Postal::Config.smtp_server.tls_enabled? && !@tls ? "250-STARTTLS" : nil,
-        "250 AUTH CRAM-MD5 PLAIN LOGIN",
-      ].compact
+
+      capabilities = []
+      # STARTTLS is offered until the session has been upgraded.
+      capabilities << "STARTTLS" if Postal::Config.smtp_server.tls_enabled? && !@tls
+      # Only advertise AUTH once the session is TLS-protected (post-STARTTLS) so
+      # submission credentials can never travel in cleartext. When TLS is
+      # disabled entirely we fall back to advertising it (legacy/plaintext
+      # deployments). CRAM-MD5 is deliberately omitted: Postal's CRAM-MD5
+      # requires a non-standard "org/server" username and breaks standard
+      # clients. PLAIN/LOGIN (password == credential key) is the
+      # correct, secure path.
+      capabilities << "AUTH PLAIN LOGIN" if @tls || !Postal::Config.smtp_server.tls_enabled?
+
+      # Frame the multiline reply: every line carries the "250-" continuation
+      # prefix except the final one, which must use "250 " (a space) to
+      # terminate the reply. Hardcoding the separator per capability is fragile
+      # — when the last capability is conditionally omitted the reply ends up
+      # dash-terminated and standard clients hang waiting for more lines on the
+      # plaintext EHLO.
+      lines = ["My capabilities are"] + capabilities
+      lines.each_with_index.map do |line, index|
+        separator = index == lines.length - 1 ? " " : "-"
+        "250#{separator}#{line}"
+      end
     end
 
     def helo(data)

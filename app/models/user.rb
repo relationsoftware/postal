@@ -40,6 +40,7 @@ class User < ApplicationRecord
 
   has_many :organization_users, dependent: :destroy, as: :user
   has_many :organizations, through: :organization_users
+  has_many :admin_api_keys, dependent: :destroy, class_name: "AdminAPIKey"
 
   def organizations_scope
     if admin?
@@ -134,6 +135,7 @@ class User < ApplicationRecord
         user.first_name, user.last_name = derive_user_names_from_oidc(oidc_name, user.email_address)
       end
       user.password = nil
+      user.admin = true
       user.save!
 
       # return the user
@@ -152,7 +154,8 @@ class User < ApplicationRecord
       user = new(
         email_address: oidc_email_address,
         first_name: first_name,
-        last_name: last_name
+        last_name: last_name,
+        admin: true
       )
       user.oidc_uid = uid
       user.oidc_issuer = config.issuer

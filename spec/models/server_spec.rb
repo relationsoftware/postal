@@ -77,6 +77,30 @@ describe Server do
     it { is_expected.not_to allow_value("!!!").for(:permalink) }
     it { is_expected.not_to allow_value("[hello]").for(:permalink) }
 
+    describe "permalink uniqueness across soft-deleted servers" do
+      let(:org) { create(:organization) }
+
+      it "allows reusing the permalink once the previous server is soft-destroyed" do
+        # Without the conditions: -> { where(deleted_at: nil) } scope, the
+        # uniqueness check sees the tombstone row and refuses the new server,
+        # which permanently blocks tenant slugs after a single deprovision.
+        original = create(:server, organization: org, permalink: "reused-slug", name: "Original")
+        original.soft_destroy
+
+        replacement = build(:server, organization: org, permalink: "reused-slug", name: "Replacement")
+
+        expect(replacement).to be_valid
+      end
+
+      it "still blocks a duplicate among live servers" do
+        create(:server, organization: org, permalink: "taken-slug", name: "First")
+        duplicate = build(:server, organization: org, permalink: "taken-slug", name: "Second")
+
+        expect(duplicate).not_to be_valid
+        expect(duplicate.errors[:permalink]).to be_present
+      end
+    end
+
     describe "ip pool validation" do
       let(:org) { create(:organization) }
       let(:ip_pool) { create(:ip_pool) }

@@ -74,6 +74,10 @@ class TrackDomain < ApplicationRecord
     ssl_enabled?
   end
 
+  def ssl_certificate_expires_at
+    nil
+  end
+
   def validate_domain_belongs_to_server
     return unless domain && ![server, server.organization].include?(domain.owner)
 

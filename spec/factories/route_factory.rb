@@ -29,7 +29,16 @@ FactoryBot.define do
 
     before(:create) do |route|
       route.server ||= create(:server)
-      route.domain ||= create(:domain, owner: route.server)
+      if route.name&.include?("@")
+        local, domain_str = route.name.split("@", 2)
+        route.name = local
+        route.domain ||= Domain.find_or_create_by(name: domain_str, owner: route.server) do |d|
+          d.verified_at = Time.now
+          d.verification_method = "DNS"
+        end
+      else
+        route.domain ||= create(:domain, :verified, owner: route.server)
+      end
     end
   end
 end

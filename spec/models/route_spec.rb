@@ -8,6 +8,10 @@ RSpec.describe Route, type: :model do
   let(:domain) { create(:domain, owner: server, verified_at: Time.now) }
 
   describe "associations" do
+    # A valid (mode "Accept") route so the .optional matcher doesn't trip over
+    # Route's custom validations when the endpoint association is unset.
+    subject { build(:route, server: server, domain: domain) }
+
     it { should belong_to(:server) }
     it { should belong_to(:domain).optional }
     it { should belong_to(:endpoint).optional }
@@ -205,9 +209,9 @@ RSpec.describe Route, type: :model do
     end
 
     it "raises error for invalid endpoint class" do
-      expect {
+      expect do
         route._endpoint = "InvalidClass#123"
-      }.to raise_error(Postal::Error, /Invalid endpoint class name/)
+      end.to raise_error(Postal::Error, /Invalid endpoint class name/)
     end
   end
 

@@ -7,9 +7,17 @@ class SessionsController < ApplicationController
   before_action :require_local_authentication, only: [:create, :begin_password_reset, :finish_password_reset]
   skip_before_action :login_required, only: [:new, :create, :begin_password_reset, :finish_password_reset, :ip, :raise_error, :create_from_oidc, :oauth_failure]
 
+  def new
+    return unless Postal::Config.oidc.enabled? && !Postal::Config.oidc.local_authentication_enabled?
+    # If we're not already coming back from a failure or a logout, redirect immediately
+    return if params[:noredirect] || flash[:alert] || flash[:notice]
+
+    redirect_to "/auth/oidc"
+    nil
+  end
+
   def create
     login(User.authenticate(params[:email_address], params[:password]))
-    flash[:remember_login] = true
     redirect_to_with_return_to root_path
   rescue Postal::Errors::AuthenticationError
     Postal.logger.error "Invalid credentials for #{request.remote_ip}", component: "postal-web"
@@ -20,7 +28,7 @@ class SessionsController < ApplicationController
   def destroy
     auth_session.invalidate! if logged_in?
     reset_session
-    redirect_to login_path
+    redirect_to login_path(noredirect: 1)
   end
 
   def persist
@@ -81,11 +89,13 @@ class SessionsController < ApplicationController
     end
 
     login(user)
-    flash[:remember_login] = true
     redirect_to_with_return_to root_path
   end
 
   def oauth_failure
+    if params[:message] || request.env["omniauth.error"]
+      Postal.logger.error "OIDC Authentication failure: #{params[:message] || request.env['omniauth.error']}", component: "postal-web", strategy: request.env["omniauth.error.strategy"]&.name
+    end
     redirect_to login_path, alert: "An issue occurred while logging you in with OpenID. Please try again later or contact your administrator."
   end
 

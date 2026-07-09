@@ -1,0 +1,18 @@
+- page_title << "New Admin API Key"
+.pageHeader
+  %h1.pageHeader__title
+    New Admin API Key
+
+.pageContent.pageContent--compact
+  = form_for @key, :url => admin_api_keys_path do |f|
+    = f.error_messages
+    %fieldset.fieldSet
+      .fieldSet__field
+        = f.label :name, "Description", :class => 'fieldSet__label'
+        .fieldSet__input
+          = f.text_field :name, :class => 'input input--text', :autofocus => true, :placeholder => "e.g. Monitoring Script"
+          %p.fieldSet__text Give this key a name so you can identify it later.
+
+    %p.fieldSetSubmit.buttonSet
+      = f.submit "Create Admin API Key", :class => 'button button--positive js-form-submit'
+      = link_to "Cancel", admin_api_keys_path, :class => 'button button--dark'

@@ -180,7 +180,7 @@ class MessagesController < ApplicationController
           end
           [[:subject, :subject], [:to, :rcpt_to], [:from, :mail_from]].each do |qs_key, where_key|
             if qs[qs_key]
-              if qs[qs_key].include?('%')
+              if qs[qs_key].include?("%")
                 options[:where][where_key] = { like: qs[qs_key] }
               else
                 options[:where][where_key] = qs[qs_key]

@@ -116,9 +116,7 @@ module Postal
       end
 
       # Always remove +notrack from URLs, even if tracking is not available
-      part = remove_notrack(part)
-
-      part
+      remove_notrack(part)
     end
 
     def insert_links(part, type = nil)

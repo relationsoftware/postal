@@ -27,7 +27,10 @@ end
 RSpec.shared_examples "requires admin api authentication" do |method, path|
   context "without authentication" do
     it "returns unauthorized error" do
-      send(method, path)
+      req_method = method || self.req_method
+      req_path = path || self.req_path
+
+      send(req_method, req_path)
       expect(response.status).to eq(401)
       parsed = JSON.parse(response.body)
       expect(parsed["status"]).to eq("error")
@@ -37,7 +40,10 @@ RSpec.shared_examples "requires admin api authentication" do |method, path|
 
   context "with invalid api key" do
     it "returns unauthorized error" do
-      send(method, path, headers: { "X-Admin-API-Key" => "invalid-key" })
+      req_method = method || self.req_method
+      req_path = path || self.req_path
+
+      send(req_method, req_path, headers: { "X-Admin-API-Key" => "invalid-key" })
       expect(response.status).to eq(401)
       parsed = JSON.parse(response.body)
       expect(parsed["status"]).to eq("error")

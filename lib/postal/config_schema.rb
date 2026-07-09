@@ -589,7 +589,7 @@ module Postal
       string :scopes do
         description "Scopes to request from the OIDC server."
         array
-        default ["openid", "email"]
+        default %w[openid email]
       end
 
       string :uid_field do

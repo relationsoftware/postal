@@ -24,7 +24,7 @@ RSpec.describe IPPool, type: :model do
 
   describe ".default" do
     it "returns the default pool" do
-      non_default = create(:ip_pool, default: false)
+      create(:ip_pool, default: false)
       default_pool = create(:ip_pool, default: true)
 
       expect(IPPool.default).to eq(default_pool)
@@ -32,7 +32,7 @@ RSpec.describe IPPool, type: :model do
 
     it "returns first default pool when multiple exist" do
       first_default = create(:ip_pool, default: true)
-      second_default = create(:ip_pool, default: true)
+      create(:ip_pool, default: true)
 
       expect(IPPool.default).to eq(first_default)
     end

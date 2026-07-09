@@ -1,26 +1,35 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
-  # Legacy API Routes
-  match "/api/v1/send/message" => "legacy_api/send#message", via: [:get, :post, :patch, :put]
-  match "/api/v1/send/raw" => "legacy_api/send#raw", via: [:get, :post, :patch, :put]
-  match "/api/v1/messages/message" => "legacy_api/messages#message", via: [:get, :post, :patch, :put]
-  match "/api/v1/messages/deliveries" => "legacy_api/messages#deliveries", via: [:get, :post, :patch, :put]
+  # Server API Routes (formerly Legacy API)
+  match "/api/v1/send/message" => "server_api/send#message", via: [:get, :post, :patch, :put]
+  match "/api/v1/send/raw" => "server_api/send#raw", via: [:get, :post, :patch, :put]
+  match "/api/v1/messages/message" => "server_api/messages#message", via: [:get, :post, :patch, :put]
+  match "/api/v1/messages/deliveries" => "server_api/messages#deliveries", via: [:get, :post, :patch, :put]
 
   # Admin API v2 Routes
   namespace :admin_api, path: "api/v2/admin" do
     # Users (global)
-    resources :users, only: [:index, :show, :create, :update, :destroy]
+    resources :users, only: [:index, :show, :create, :update, :destroy] do
+      collection do
+        get "find/:lookup", action: :find, as: :find, constraints: { lookup: /.+/ }
+      end
+    end
 
     # IP Pools (global)
     resources :ip_pools, only: [:index, :show, :create, :update, :destroy] do
       resources :ip_addresses, only: [:index, :show, :create, :update, :destroy]
     end
 
+    # Server lookup by permalink (global) — lets an external integration
+    # resolve a server slug to its organisation before addressing the
+    # org-nested admin routes.
+    get "servers/find/:permalink", to: "server_lookups#show", constraints: { permalink: /.+/ }
+
     # Organizations
     resources :organizations, only: [:index, :show, :create, :update, :destroy] do
       # Organization Users
-      resources :users, controller: "organization_users", only: [:index, :show, :update, :destroy] do
+      resources :users, controller: "organization_users", only: [:index, :show, :update, :destroy], constraints: { id: /.+/ } do
         collection do
           post :add
         end
@@ -34,7 +43,7 @@ Rails.application.routes.draw do
         end
 
         # Server resources
-        resources :domains, only: [:index, :show, :create, :update, :destroy] do
+        resources :domains, only: [:index, :show, :create, :update, :destroy], constraints: { id: /.+/ } do
           member do
             post :verify
             post :check
@@ -63,7 +72,7 @@ Rails.application.routes.draw do
             delete :queue, action: :remove_from_queue
           end
         end
-        resources :suppressions, only: [:index, :create, :destroy]
+        resources :suppressions, only: [:index, :create, :destroy], constraints: { id: /.+/ }
       end
     end
   end
@@ -144,6 +153,7 @@ Rails.application.routes.draw do
 
   get "settings" => "user#edit"
   patch "settings" => "user#update"
+  resources :admin_api_keys, only: [:index, :new, :create, :destroy, :show], path: "settings/admin_api_keys"
   post "persist" => "sessions#persist"
 
   get "login" => "sessions#new"

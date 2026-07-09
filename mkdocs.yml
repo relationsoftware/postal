@@ -1,0 +1,58 @@
+site_name: Postal
+site_description: Documentation for Postal - self-hosted mail delivery platform
+repo_url: https://github.com/relationsoftware/postal
+docs_dir: docs
+
+nav:
+  - Home: index.md
+  - Quick Start: QUICKSTART.md
+  - Installation Checklist: INSTALL-CHECKLIST.md
+  - Development: development.md
+  - Docker Compose: docker-compose.md
+  - Configuration:
+      - Overview: config/configuration.md
+      - Environment Variables: config/environment-variables.md
+  - Getting Started:
+      - Index: getting-started/index.md
+      - Prerequisites: getting-started/prerequisites.md
+      - Installation: getting-started/installation.md
+      - DNS Configuration: getting-started/dns-configuration.md
+      - Configuration: getting-started/configuration.md
+      - Upgrading: getting-started/upgrading.md
+      - Upgrade to v3: getting-started/upgrade-to-v3.md
+      - Upgrade to v2: getting-started/upgrade-to-v2.md
+  - Features:
+      - Click & Open Tracking: features/click-and-open-tracking.md
+      - Health & Metrics: features/health-metrics.md
+      - IP Pools: features/ip-pools.md
+      - Logging: features/logging.md
+      - OpenID Connect: features/oidc.md
+      - SMTP Authentication: features/smtp-authentication.md
+      - SMTP TLS: features/smtp-tls.md
+      - Spam & Virus Checking: features/spam-and-virus-checking.md
+  - Developer & API:
+      - Admin API v2: admin-api.md
+      - API Inventory: api-inventory.md
+      - Legacy HTTP API: developer/api.md
+      - Client Libraries: developer/client-libraries.md
+      - HTTP Payloads: developer/http-payloads.md
+      - Webhooks: developer/webhooks.md
+  - Operations:
+      - Auto-Responders & Bounces: other/auto-responders-and-bounces.md
+      - Containers: other/containers.md
+      - Debugging: other/debugging.md
+      - Wildcards & Address Tags: other/wildcards-and-address-tags.md
+  - Project:
+      - Contributing: contributing.md
+      - Testing: TESTING.md
+      - Changelog: changelog.md
+      - Security: security.md
+  - Welcome:
+      - Feature List: welcome/feature-list.md
+      - FAQs: welcome/faqs.md
+
+theme:
+  name: material
+
+plugins:
+  - techdocs-core

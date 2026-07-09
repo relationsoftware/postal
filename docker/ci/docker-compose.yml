@@ -1,0 +1,55 @@
+# Self-contained test runner. Runs the full spec suite inside a container on a
+# Docker network (reliable DNS), identical locally and in CI - no dependency on
+# the GitHub runner host for test execution.
+#
+#   docker compose -f docker/ci/docker-compose.yml run --build --rm test
+#
+# (or: make ci-test)
+services:
+  mariadb:
+    image: mariadb:10.6
+    # Disable InnoDB native async I/O (io_uring). GitHub runners disable io_uring
+    # at the kernel level (kernel.io_uring_disabled=2); MariaDB 10.6 otherwise
+    # tries to use it for InnoDB I/O and stalls on the runner filesystem, which
+    # wedged DB queries in an uninterruptible (D-state) wait and hung the suite.
+    command: ["--innodb-use-native-aio=0"]
+    environment:
+      MARIADB_ROOT_PASSWORD: postal
+      MARIADB_DATABASE: postal
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  test:
+    build:
+      context: ../..
+      target: ci
+    # The image bakes ruby + gems + nodejs; spec/ is excluded by .dockerignore,
+    # so mount the checked-out repo over the app dir to run the current code's
+    # tests (gems stay in /usr/local/bundle). Run as root so writes to the
+    # mounted tree (tmp/, coverage/) work regardless of host file ownership.
+    user: root
+    working_dir: /opt/postal/app
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      RAILS_ENV: test
+      POSTAL_CONFIG_FILE_PATH: /config/postal.test.yml
+      WAIT_FOR_TARGETS: mariadb:3306
+      WAIT_FOR_TIMEOUT: 60
+    volumes:
+      - ../..:/opt/postal/app
+      # Test config + committed test signing key, mounted read-only.
+      - ./postal.test.yml:/config/postal.test.yml:ro
+      - ./signing.key:/config/signing.key:ro
+    command:
+      - sh
+      - -lc
+      - >
+        echo ">>> phase: db setup" &&
+        bundle exec rake db:create db:schema:load &&
+        echo ">>> phase: rspec" &&
+        timeout -k 30 -s TERM 600 bundle exec rspec --format documentation --tag "~external_dns"

@@ -115,7 +115,7 @@ module MessageDequeuer
       end
 
       it "marks the message as spam if the spam score is higher than the server threshold" do
-        inspection_result = double("Result", spam_score: server.spam_threshold + 1, threat: false, threat_message: nil, spam_checks: [])
+        inspection_result = double("Result", spam_score: server.spam_threshold + 1, threat: false, threat_message: nil, spam_checks: [], successful?: true)
         allow(Postal::MessageInspection).to receive(:scan).and_return(inspection_result)
         processor.process
         expect(message.reload.spam).to be true
@@ -124,7 +124,7 @@ module MessageDequeuer
 
     context "when the message has a spam score greater than the server's spam failure threshold" do
       before do
-        inspection_result = double("Result", spam_score: 100, threat: false, threat_message: nil, spam_checks: [])
+        inspection_result = double("Result", spam_score: 100, threat: false, threat_message: nil, spam_checks: [], successful?: true)
         allow(Postal::MessageInspection).to receive(:scan).and_return(inspection_result)
       end
 
@@ -210,7 +210,7 @@ module MessageDequeuer
       let(:route) { create(:route, server: server, spam_mode: "Quarantine") }
 
       before do
-        inspection_result = double("Result", spam_score: server.spam_threshold + 1, threat: false, threat_message: nil, spam_checks: [])
+        inspection_result = double("Result", spam_score: server.spam_threshold + 1, threat: false, threat_message: nil, spam_checks: [], successful?: true)
         allow(Postal::MessageInspection).to receive(:scan).and_return(inspection_result)
       end
 
@@ -240,7 +240,7 @@ module MessageDequeuer
       let(:route) { create(:route, server: server, spam_mode: "Fail") }
 
       before do
-        inspection_result = double("Result", spam_score: server.spam_threshold + 1, threat: false, threat_message: nil, spam_checks: [])
+        inspection_result = double("Result", spam_score: server.spam_threshold + 1, threat: false, threat_message: nil, spam_checks: [], successful?: true)
         allow(Postal::MessageInspection).to receive(:scan).and_return(inspection_result)
       end
 
@@ -562,8 +562,8 @@ module MessageDequeuer
         end
 
         it "updates the queued message with a new retry time" do
-          Timecop.freeze do
-            retry_time = 5.minutes.from_now.change(usec: 0)
+          Timecop.freeze(Time.now.change(usec: 0)) do
+            retry_time = 5.minutes.from_now
             processor.process
             expect(queued_message.reload.retry_after).to eq retry_time
           end

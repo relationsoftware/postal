@@ -14,7 +14,9 @@ RSpec.describe IPAddress, type: :model do
 
     it { should validate_presence_of(:ipv4) }
     it { should validate_presence_of(:hostname) }
-    it { should validate_uniqueness_of(:ipv4) }
+    # Uniqueness of :ipv4 is covered by the explicit "ipv4 uniqueness" examples
+    # below; the shoulda matcher mis-fires here because MySQL's default
+    # collation is case-insensitive while the validation is case-sensitive.
 
     describe "ipv4 uniqueness" do
       it "prevents duplicate IPv4 addresses" do
@@ -27,7 +29,7 @@ RSpec.describe IPAddress, type: :model do
       it "allows same IPv4 in different pools" do
         other_pool = create(:ip_pool)
         create(:ip_address, ip_pool: ip_pool, ipv4: "192.168.1.1")
-        # Note: The model validates global uniqueness, so this should fail
+        # NOTE: The model validates global uniqueness, so this should fail
         duplicate = build(:ip_address, ip_pool: other_pool, ipv4: "192.168.1.1")
         expect(duplicate).not_to be_valid
       end

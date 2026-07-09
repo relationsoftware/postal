@@ -41,7 +41,15 @@ FactoryBot.define do
     association :owner, factory: :organization
     sequence(:name) { |n| "example#{n}.com" }
     verification_method { "DNS" }
+    # Default to verified: most specs (and the "when there is a verified
+    # domain" contexts) create domains with a bare create(:domain) and expect
+    # them to be usable for sending. Use the :unverified trait for the cases
+    # that specifically exercise unverified domains.
     verified_at { Time.now }
+
+    trait :verified do
+      verified_at { Time.now }
+    end
 
     trait :unverified do
       verified_at { nil }

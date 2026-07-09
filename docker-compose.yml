@@ -1,28 +1,110 @@
-services:
-  postal:
-    image: ${POSTAL_IMAGE}
-    depends_on:
-      - mariadb
-    entrypoint: ["/docker-entrypoint.sh"]
-    volumes:
-      - "./docker/ci-config:/config"
-    environment:
-      POSTAL_SIGNING_KEY_PATH: /config/signing.key
-      MAIN_DB_HOST: mariadb
-      MAIN_DB_USERNAME: root
-      MESSAGE_DB_HOST: mariadb
-      MESSAGE_DB_USERNAME: root
-      LOGGING_ENABLED: "false"
-      RAILS_ENVIRONMENT: test
-      RAILS_LOG_ENABLED: "false"
-      WAIT_FOR_TIMEOUT: 90
-      WAIT_FOR_TARGETS: |-
-        mariadb:3306
+version: "3.9"
 
+services:
+  # MariaDB database service
   mariadb:
-    image: mariadb
-    restart: always
+    image: mariadb:latest
+    container_name: postal-mariadb
+    restart: unless-stopped
     environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-postal}
       MARIADB_DATABASE: postal
-      MARIADB_ALLOW_EMPTY_PASSWORD: 'yes'
-      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 'yes'
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    ports:
+      - "127.0.0.1:3306:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Postal web server
+  web:
+    image: ghcr.io/relationsoftware/postal:${POSTAL_VERSION:-latest}
+    container_name: postal-web
+    command: postal web-server
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      WAIT_FOR_TARGETS: mariadb:3306
+      WAIT_FOR_TIMEOUT: 60
+    volumes:
+      - ./config:/config:ro
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+
+  # Postal SMTP server
+  smtp:
+    image: ghcr.io/relationsoftware/postal:${POSTAL_VERSION:-latest}
+    container_name: postal-smtp
+    command: postal smtp-server
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      WAIT_FOR_TARGETS: mariadb:3306
+      WAIT_FOR_TIMEOUT: 60
+    cap_add:
+      - NET_BIND_SERVICE
+    volumes:
+      - ./config:/config:ro
+    ports:
+      - "25:25"
+    restart: unless-stopped
+
+  # Postal worker
+  worker:
+    image: ghcr.io/relationsoftware/postal:${POSTAL_VERSION:-latest}
+    container_name: postal-worker
+    command: postal worker
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      WAIT_FOR_TARGETS: mariadb:3306
+      WAIT_FOR_TIMEOUT: 60
+    volumes:
+      - ./config:/config:ro
+    restart: unless-stopped
+
+  # Caddy reverse proxy for SSL/TLS termination
+  caddy:
+    image: caddy:latest
+    container_name: postal-caddy
+    restart: unless-stopped
+    depends_on:
+      - web
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./config/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+  # Runner service for one-off commands (use with docker compose run runner)
+  runner:
+    profiles: ["tools"]
+    image: ghcr.io/relationsoftware/postal:${POSTAL_VERSION:-latest}
+    container_name: postal-runner
+    command: postal
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      WAIT_FOR_TARGETS: mariadb:3306
+      WAIT_FOR_TIMEOUT: 60
+    volumes:
+      - ./config:/config
+
+volumes:
+  mariadb-data:
+    driver: local
+  caddy-data:
+    driver: local
+  caddy-config:
+    driver: local

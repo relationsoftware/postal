@@ -63,11 +63,11 @@ RSpec.describe "Admin API - Credentials", type: :request do
   describe "POST /api/v2/admin/organizations/:org/servers/:server/credentials" do
     context "with valid authentication" do
       it "creates a new SMTP credential" do
-        expect {
+        expect do
           post "/api/v2/admin/organizations/#{organization.permalink}/servers/#{server.permalink}/credentials",
                params: { name: "New SMTP", type: "SMTP" }.to_json,
                headers: json_headers
-        }.to change(Credential, :count).by(1)
+        end.to change(Credential, :count).by(1)
 
         expect(response.status).to eq(201)
         expect_success
@@ -145,10 +145,10 @@ RSpec.describe "Admin API - Credentials", type: :request do
 
     context "with valid authentication" do
       it "deletes the credential" do
-        expect {
+        expect do
           delete "/api/v2/admin/organizations/#{organization.permalink}/servers/#{server.permalink}/credentials/#{credential.uuid}",
                  headers: auth_headers
-        }.to change(Credential, :count).by(-1)
+        end.to change(Credential, :count).by(-1)
 
         expect(response.status).to eq(200)
         expect(json_response["data"]["deleted"]).to eq(true)

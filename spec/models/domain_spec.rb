@@ -333,6 +333,23 @@ describe Domain do
       end
     end
 
+    context "when a TXT record uses the '=' separator" do
+      let(:domain) { create(:domain, :unverified) }
+      let(:txt_record) { "#{Postal::Config.dns.domain_verify_prefix}=#{domain.verification_token}" }
+
+      before do
+        allow(domain.resolver).to receive(:txt).with(domain.name).and_return([txt_record])
+      end
+
+      it "returns true" do
+        expect(domain.verify_with_dns).to be true
+      end
+
+      it "sets the verification time" do
+        expect { domain.verify_with_dns }.to change { domain.verified_at }.from(nil).to(kind_of(Time))
+      end
+    end
+
     context "when no TXT record is found" do
       let(:domain) { create(:domain, :unverified) }
 

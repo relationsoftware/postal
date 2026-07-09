@@ -1,0 +1,699 @@
+---
+openapi: 3.0.3
+info:
+  title: app
+  version: 1.0.0
+servers: []
+security:
+- ServerAPIKey: []
+paths:
+  "/api/v1/messages/deliveries":
+    post:
+      summary: deliveries
+      tags:
+      - ServerAPI::Message
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties: {}
+            example: {}
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+              required:
+              - id
+            example:
+              id: 1
+      responses:
+        '200':
+          description: returns an array of deliveries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  time:
+                    type: number
+                    format: float
+                  flags:
+                    type: object
+                    properties: {}
+                  data:
+                    type: array
+                    properties:
+                      message:
+                        type: string
+                      code:
+                        type: string
+                      token:
+                        type: string
+                      id:
+                        type: integer
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: integer
+                        status:
+                          type: string
+                        details:
+                          type: string
+                        output:
+                          type: string
+                        sent_with_ssl:
+                          type: boolean
+                        log_id:
+                          type: string
+                        time:
+                          type: number
+                          format: float
+                        timestamp:
+                          type: number
+                          format: float
+                      required:
+                      - id
+                      - status
+                      - details
+                      - output
+                      - sent_with_ssl
+                      - log_id
+                      - time
+                      - timestamp
+                required:
+                - status
+                - time
+                - flags
+                - data
+              example:
+                status: success
+                time: 0.003
+                flags: {}
+                data:
+                - id: 1
+                  status: SoftFail
+                  details: no server found
+                  output: '404'
+                  sent_with_ssl: true
+                  log_id: '1234'
+                  time: 1.2
+                  timestamp: 1769642866.6181078
+                - id: 2
+                  status: Sent
+                  details: sent successfully
+                  output: '200'
+                  sent_with_ssl: false
+                  log_id: '5678'
+                  time: 2.2
+                  timestamp: 1769642866.6893709
+      security:
+      - ServerAPIKey: []
+  "/api/v1/messages/message":
+    post:
+      summary: message
+      tags:
+      - ServerAPI::Message
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties: {}
+            example: {}
+          application/json:
+            schema:
+              type: object
+              properties:
+                id:
+                  type: integer
+                _expansions:
+                  type: array
+                  items:
+                    type: string
+              required:
+              - id
+            example:
+              id: 1
+              _expansions:
+              - activity_entries
+      responses:
+        '200':
+          description: returns details about the message
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  time:
+                    type: number
+                    format: float
+                  flags:
+                    type: object
+                    properties: {}
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                      code:
+                        type: string
+                      token:
+                        type: string
+                      id:
+                        type: integer
+                      status:
+                        type: object
+                        properties:
+                          status:
+                            type: string
+                          last_delivery_attempt:
+                            nullable: true
+                          held:
+                            type: boolean
+                          hold_expiry:
+                            nullable: true
+                        required:
+                        - status
+                        - last_delivery_attempt
+                        - held
+                        - hold_expiry
+                      details:
+                        type: object
+                        properties:
+                          rcpt_to:
+                            type: string
+                          mail_from:
+                            type: string
+                          subject:
+                            type: string
+                          message_id:
+                            type: string
+                          timestamp:
+                            type: number
+                            format: float
+                          direction:
+                            type: string
+                          size:
+                            type: string
+                          bounce:
+                            type: boolean
+                          bounce_for_id:
+                            type: integer
+                          tag:
+                            nullable: true
+                          received_with_ssl:
+                            nullable: true
+                        required:
+                        - rcpt_to
+                        - mail_from
+                        - subject
+                        - message_id
+                        - timestamp
+                        - direction
+                        - size
+                        - bounce
+                        - bounce_for_id
+                        - tag
+                        - received_with_ssl
+                      inspection:
+                        type: object
+                        properties:
+                          inspected:
+                            type: boolean
+                          spam:
+                            type: boolean
+                          spam_score:
+                            type: number
+                            format: float
+                          threat:
+                            type: boolean
+                          threat_details:
+                            nullable: true
+                        required:
+                        - inspected
+                        - spam
+                        - spam_score
+                        - threat
+                        - threat_details
+                      plain_body:
+                        type: string
+                      html_body:
+                        nullable: true
+                      attachments:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            filename:
+                              type: string
+                            content_type:
+                              type: string
+                            data:
+                              type: string
+                            size:
+                              type: integer
+                            hash:
+                              type: string
+                          required:
+                          - filename
+                          - content_type
+                          - data
+                          - size
+                          - hash
+                      headers:
+                        type: object
+                        properties:
+                          date:
+                            type: array
+                            items:
+                              type: string
+                          from:
+                            type: array
+                            items:
+                              type: string
+                          to:
+                            type: array
+                            items:
+                              type: string
+                          message-id:
+                            type: array
+                            items:
+                              type: string
+                          subject:
+                            type: array
+                            items:
+                              type: string
+                          mime-version:
+                            type: array
+                            items:
+                              type: string
+                          content-type:
+                            type: array
+                            items:
+                              type: string
+                          content-transfer-encoding:
+                            type: array
+                            items:
+                              type: string
+                        required:
+                        - date
+                        - from
+                        - to
+                        - message-id
+                        - subject
+                        - mime-version
+                        - content-type
+                        - content-transfer-encoding
+                      raw_message:
+                        type: string
+                      activity_entries:
+                        type: object
+                        properties:
+                          loads:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                ip_address:
+                                  type: string
+                                user_agent:
+                                  type: string
+                                timestamp:
+                                  type: string
+                              required:
+                              - ip_address
+                              - user_agent
+                              - timestamp
+                          clicks:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                url:
+                                  type: string
+                                ip_address:
+                                  type: string
+                                user_agent:
+                                  type: string
+                                timestamp:
+                                  type: string
+                              required:
+                              - url
+                              - ip_address
+                              - user_agent
+                              - timestamp
+                        required:
+                        - loads
+                        - clicks
+                required:
+                - status
+                - time
+                - flags
+                - data
+              example:
+                status: success
+                time: 0.009
+                flags: {}
+                data:
+                  message: No message found matching provided ID
+                  code: MessageNotFound
+                  token: 3QnOH1To9rzrLn91
+                  id: 1
+                  status:
+                    status: Pending
+                    last_delivery_attempt:
+                    held: false
+                    hold_expiry:
+                  details:
+                    rcpt_to: john@example.com
+                    mail_from: test@example.com
+                    subject: An example message
+                    message_id: 697a9b7326761_1bf00c6@4b7b3b137d64.mail
+                    timestamp: 1769642867.160372
+                    direction: outgoing
+                    size: '278'
+                    bounce: false
+                    bounce_for_id: 0
+                    tag:
+                    received_with_ssl:
+                  inspection:
+                    inspected: false
+                    spam: false
+                    spam_score: 0.0
+                    threat: false
+                    threat_details:
+                  plain_body: Hello world!
+                  html_body:
+                  attachments:
+                  - filename: example.txt
+                    content_type: text/plain
+                    data: 'aGVsbG8gd29ybGQh
+
+                      '
+                    size: 12
+                    hash: 430ce34d020724ed75a196dfc2ad67c77772d169
+                  headers:
+                    date:
+                    - Wed, 28 Jan 2026 23:27:47 +0000
+                    from:
+                    - test@example.com
+                    to:
+                    - john@example.com
+                    message-id:
+                    - "<697a9b73a7ba6_1bf05f7@4b7b3b137d64.mail>"
+                    subject:
+                    - An example message
+                    mime-version:
+                    - '1.0'
+                    content-type:
+                    - text/plain; charset=UTF-8
+                    content-transfer-encoding:
+                    - 7bit
+                  raw_message: |
+                    RGF0ZTogV2VkLCAyOCBKYW4gMjAyNiAyMzoyNzo0NyArMDAwMA0KRnJvbTog
+                    dGVzdEBleGFtcGxlLmNvbQ0KVG86IGpvaG5AZXhhbXBsZS5jb20NCk1lc3Nh
+                    Z2UtSUQ6IDw2OTdhOWI3M2MwNjBiXzFiZjA2NDhANGI3YjNiMTM3ZDY0Lm1h
+                    aWw+DQpTdWJqZWN0OiBBbiBleGFtcGxlIG1lc3NhZ2UNCk1pbWUtVmVyc2lv
+                    bjogMS4wDQpDb250ZW50LVR5cGU6IHRleHQvcGxhaW47DQogY2hhcnNldD1V
+                    VEYtOA0KQ29udGVudC1UcmFuc2Zlci1FbmNvZGluZzogN2JpdA0KDQpIZWxs
+                    byB3b3JsZCE=
+                  activity_entries:
+                    loads:
+                    - ip_address: 1.2.3.4
+                      user_agent: user agent
+                      timestamp: '2026-01-28T23:27:47.916Z'
+                    clicks:
+                    - url: https://example.com
+                      ip_address: 1.2.3.4
+                      user_agent: user agent
+                      timestamp: '2026-01-28T23:27:47.920Z'
+      security:
+      - ServerAPIKey: []
+  "/api/v1/send/message":
+    post:
+      summary: message
+      tags:
+      - ServerAPI::Send
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                to:
+                  type: array
+                  items:
+                    type: string
+                from:
+                  type: string
+                  nullable: true
+                subject:
+                  type: string
+                plain_body:
+                  type: string
+                  nullable: true
+                message_ids:
+                  type: object
+                  properties:
+                    test1@example.com:
+                      type: string
+                    test2@example.com:
+                      type: string
+                  required:
+                  - test1@example.com
+                cc:
+                  type: array
+                  items:
+                    type: string
+                bcc:
+                  type: array
+                  items:
+                    type: string
+                sender:
+                  type: string
+                tag:
+                  type: string
+                reply_to:
+                  type: string
+                html_body:
+                  type: string
+                  nullable: true
+                attachments:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+                        nullable: true
+                      content_type:
+                        type: string
+                      data:
+                        type: string
+                        nullable: true
+                    required:
+                    - name
+                    - content_type
+                    - data
+                headers:
+                  type: object
+                  properties:
+                    x-test-header-1:
+                      type: string
+                    x-test-header-2:
+                      type: string
+                  required:
+                  - x-test-header-1
+                  - x-test-header-2
+                bounce:
+                  type: boolean
+              required:
+              - to
+              - from
+              - plain_body
+              - subject
+            example:
+              to:
+              - test@example.com
+              from: test@example33.com
+              subject: Test
+              plain_body: plain text
+              message_ids:
+                test1@example.com: id with spaces@example.com
+                test2@example.com: valid-id@example.com
+              cc:
+              - cc@example.com
+              bcc:
+              - bcc@example.com
+              sender: sender@example33.com
+              tag: test-tag
+              reply_to: reply@example.com
+              html_body: "<p>html</p>"
+              attachments:
+              - name: test1.txt
+                content_type: text/plain
+                data: 'aGVsbG8gd29ybGQgMQ==
+
+                  '
+              - name: test2.txt
+                content_type: text/plain
+                data: 'aGVsbG8gd29ybGQgMg==
+
+                  '
+              headers:
+                x-test-header-1: '111'
+                x-test-header-2: '222'
+              bounce: false
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties: {}
+            example: {}
+      responses:
+        '200':
+          description: creates appropriate message objects
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  time:
+                    type: number
+                    format: float
+                  flags:
+                    type: object
+                    properties: {}
+                  data:
+                    type: object
+                    properties:
+                      message:
+                        type: string
+                      code:
+                        type: string
+                      token:
+                        type: string
+                    required:
+                    - code
+                required:
+                - status
+                - time
+                - flags
+                - data
+              example:
+                status: error
+                time: 0.004
+                flags: {}
+                data:
+                  message: The From address is not authorised to send mail from this
+                    server
+                  code: UnauthenticatedFromAddress
+                  token: invalid
+      security:
+      - ServerAPIKey: []
+  "/api/v1/send/raw":
+    post:
+      summary: raw
+      tags:
+      - ServerAPI::Send
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rcpt_to:
+                  type: array
+                  items:
+                    type: string
+                mail_from:
+                  type: string
+                data:
+                  type: string
+                bounce:
+                  type: boolean
+            example:
+              rcpt_to:
+              - test1@example.com
+              - test2@example.com
+              mail_from: test@example39.com
+              data: |
+                RGF0ZTogV2VkLCAyOCBKYW4gMjAyNiAyMzoyNzo0OSArMDAwMA0KRnJvbTog
+                dGVzdEBleGFtcGxlMzkuY29tDQpUbzogdGVzdDFAZXhhbXBsZS5jb20NCk1l
+                c3NhZ2UtSUQ6IDw2OTdhOWI3NWFiM2I3XzFiZjAyNWFkQDRiN2IzYjEzN2Q2
+                NC5tYWlsPg0KU3ViamVjdDogdGVzdA0KTWltZS1WZXJzaW9uOiAxLjANCkNv
+                bnRlbnQtVHlwZTogbXVsdGlwYXJ0L2FsdGVybmF0aXZlOw0KIGJvdW5kYXJ5
+                PSItLT09X21pbWVwYXJ0XzY5N2E5Yjc1YWIyNjBfMWJmMDI0ZjciDQpDb250
+                ZW50LVRyYW5zZmVyLUVuY29kaW5nOiA3Yml0DQoNCg0KLS0tLT09X21pbWVw
+                YXJ0XzY5N2E5Yjc1YWIyNjBfMWJmMDI0ZjcNCkNvbnRlbnQtVHlwZTogdGV4
+                dC9wbGFpbjsNCiBjaGFyc2V0PVVURi04DQpDb250ZW50LVRyYW5zZmVyLUVu
+                Y29kaW5nOiA3Yml0DQoNCnBsYWluIHRleHQNCi0tLS09PV9taW1lcGFydF82
+                OTdhOWI3NWFiMjYwXzFiZjAyNGY3DQpDb250ZW50LVR5cGU6IHRleHQvaHRt
+                bDsNCiBjaGFyc2V0PVVURi04DQpDb250ZW50LVRyYW5zZmVyLUVuY29kaW5n
+                OiA3Yml0DQoNCjxwPmh0bWw8L3A+DQotLS0tPT1fbWltZXBhcnRfNjk3YTli
+                NzVhYjI2MF8xYmYwMjRmNy0tDQo=
+              bounce: false
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                params:
+                  type: string
+            example:
+              params: '{"mail_from":"test@example40.com","rcpt_to":["test1@example.com","test2@example.com"],"data":"RGF0ZTogV2VkLCAyOCBKYW4gMjAyNiAyMzoyNzo0OSArMDAwMA0KRnJvbTog\ndGVzdEBleGFtcGxlNDAuY29tDQpUbzogdGVzdDFAZXhhbXBsZS5jb20NCk1l\nc3NhZ2UtSUQ6IDw2OTdhOWI3NWIxZDRhXzFiZjAyODY4QDRiN2IzYjEzN2Q2\nNC5tYWlsPg0KU3ViamVjdDogdGVzdA0KTWltZS1WZXJzaW9uOiAxLjANCkNv\nbnRlbnQtVHlwZTogbXVsdGlwYXJ0L2FsdGVybmF0aXZlOw0KIGJvdW5kYXJ5\nPSItLT09X21pbWVwYXJ0XzY5N2E5Yjc1YjFiZjBfMWJmMDI3NWMiDQpDb250\nZW50LVRyYW5zZmVyLUVuY29kaW5nOiA3Yml0DQoNCg0KLS0tLT09X21pbWVw\nYXJ0XzY5N2E5Yjc1YjFiZjBfMWJmMDI3NWMNCkNvbnRlbnQtVHlwZTogdGV4\ndC9wbGFpbjsNCiBjaGFyc2V0PVVURi04DQpDb250ZW50LVRyYW5zZmVyLUVu\nY29kaW5nOiA3Yml0DQoNCnBsYWluIHRleHQNCi0tLS09PV9taW1lcGFydF82\nOTdhOWI3NWIxYmYwXzFiZjAyNzVjDQpDb250ZW50LVR5cGU6IHRleHQvaHRt\nbDsNCiBjaGFyc2V0PVVURi04DQpDb250ZW50LVRyYW5zZmVyLUVuY29kaW5n\nOiA3Yml0DQoNCjxwPmh0bWw8L3A+DQotLS0tPT1fbWltZXBhcnRfNjk3YTli\nNzViMWJmMF8xYmYwMjc1Yy0tDQo=\n","bounce":false}'
+      responses:
+        '200':
+          description: returns details of the messages created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  time:
+                    type: number
+                    format: float
+                  flags:
+                    type: object
+                    properties: {}
+                  data:
+                    type: object
+                    properties:
+                      code:
+                        type: string
+                      message:
+                        type: string
+                      token:
+                        type: string
+                required:
+                - status
+                - time
+                - flags
+                - data
+              example:
+                status: error
+                time: 0.003
+                flags: {}
+                data:
+                  code: UnauthenticatedFromAddress
+                  message: "`data` parameter is required but is missing"
+                  token: invalid
+      security:
+      - ServerAPIKey: []
+components:
+  securitySchemes:
+    ServerAPIKey:
+      type: apiKey
+      name: X-Server-API-Key
+      in: header
+      description: Server API Key for authenticating with the Postal Mail API

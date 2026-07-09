@@ -54,7 +54,7 @@ RSpec.describe "Admin API - Organizations", type: :request do
       end
 
       it "includes servers list" do
-        server = create(:server, organization: organization, name: "Mail Server")
+        create(:server, organization: organization, name: "Mail Server")
         get "/api/v2/admin/organizations/#{organization.permalink}", headers: auth_headers
         expect(json_response["data"]["organization"]["servers"]).to be_an(Array)
         expect(json_response["data"]["organization"]["servers"].first["name"]).to eq("Mail Server")
@@ -73,11 +73,11 @@ RSpec.describe "Admin API - Organizations", type: :request do
 
     context "with valid authentication" do
       it "creates a new organization" do
-        expect {
+        expect do
           post "/api/v2/admin/organizations",
                params: { name: "New Organization" }.to_json,
                headers: json_headers
-        }.to change(Organization, :count).by(1)
+        end.to change(Organization, :count).by(1)
 
         expect(response.status).to eq(201)
         expect_success

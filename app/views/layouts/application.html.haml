@@ -11,14 +11,6 @@
   %body
     = display_flash
     %header.siteHeader{'data-turbolinks-permanent' => true}
-      - if flash[:remember_login] && !auth_session.persistent?
-        .siteHeader__remember.js-remember
-          .siteHeader__rememberText
-            %p.siteHeader__rememberTextTitle Would you like to stay logged in?
-            %p This will keep you logged in in this browser for 2 months.
-          .siteHeader__rememberButtons.buttonSet
-            = link_to "Remember me", '#', :class => 'button button--positive button--small', :data => {:remember => 'yes'}
-            = link_to "Close", '#', :class => 'button button--dark button--small', :data => {:remember => 'no'}
 
       .siteHeader__inside
         .siteHeader__logo= link_to "Postal", root_path
@@ -35,10 +27,12 @@
                 %li.siteHeader__subMenuItem= link_to "Organization Settings", organization_settings_path(organization), :class => 'siteHeader__subMenuLink'
                 - if current_user.admin?
                   %li.siteHeader__subMenuItem= link_to "Create new organization", :new_organization, :class => 'siteHeader__subMenuLink'
-                - if current_user.organizations.present.count > 1
+                - if current_user.admin? || current_user.organizations.present.count > 1
                   %li.siteHeader__subMenuItem= link_to "Switch organization", root_path, :class => 'siteHeader__subMenuLink'
           %li.siteHeader__navItem.siteHeader__navItem--user= current_user.name
           %li.siteHeader__navItem= link_to "My Settings", settings_path, :class => 'sideHeader__navItemLink'
+          - if current_user.admin?
+            %li.siteHeader__navItem= link_to "Admin API Keys", admin_api_keys_path, :class => 'sideHeader__navItemLink'
           - if current_user.admin?
             - if Postal.ip_pools?
               %li.siteHeader__navItem= link_to "IP Pools", ip_pools_path, :class => 'sideHeader__navItemLink'

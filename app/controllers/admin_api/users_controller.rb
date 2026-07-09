@@ -7,26 +7,39 @@ module AdminAPI
 
     # GET /api/v2/admin/users
     def index
-      users = User.order(:email_address)
+      users = User.where(admin: false).order(:email_address)
       result = paginate(users)
 
       render_success(
-        users: result[:items].map { |u| user_json(u) },
+        users: result[:items].map { |u| serialize_user(u) },
         pagination: result[:pagination]
       )
     end
 
     # GET /api/v2/admin/users/:id
     def show
-      render_success(user: user_json(@user, include_details: true))
+      render_success(user: serialize_user(@user, include_details: true))
+    end
+
+    # GET /api/v2/admin/users/find/:lookup
+    # Find by UUID or email address
+    def find
+      user = User.find_by(uuid: params[:lookup]) || User.find_by(email_address: params[:lookup])
+      raise ActiveRecord::RecordNotFound unless user
+
+      render_success(user: serialize_user(user, include_details: true))
+    rescue ActiveRecord::RecordNotFound
+      render_not_found
     end
 
     # POST /api/v2/admin/users
     def create
       user = User.new(user_params)
-      user.password = params[:password] if params[:password].present?
+      user.password = params[:password].presence || generate_password
       user.save!
-      render_created(user: user_json(user))
+      render_created(user: serialize_user(user, include_password: true))
+    rescue ActiveRecord::RecordInvalid => e
+      render_validation_error(e.record)
     end
 
     # PATCH /api/v2/admin/users/:id
@@ -34,7 +47,9 @@ module AdminAPI
       @user.assign_attributes(user_params)
       @user.password = params[:password] if params[:password].present?
       @user.save!
-      render_success(user: user_json(@user))
+      render_success(user: serialize_user(@user))
+    rescue ActiveRecord::RecordInvalid => e
+      render_validation_error(e.record)
     end
 
     # DELETE /api/v2/admin/users/:id
@@ -46,14 +61,20 @@ module AdminAPI
     private
 
     def find_user
-      @user = User.find_by!(uuid: params[:id]) rescue User.find_by!(email_address: params[:id])
+      @user = User.find_by(uuid: params[:id]) || User.find_by(email_address: params[:id])
+      render_not_found unless @user
     end
 
     def user_params
-      params.permit(:first_name, :last_name, :email_address, :time_zone, :admin)
+      params.permit(:email_address, :first_name, :last_name)
     end
 
-    def user_json(user, include_details: false)
+    def generate_password
+      # Generate a random 16-character password
+      SecureRandom.alphanumeric(16)
+    end
+
+    def serialize_user(user, include_details: false, include_password: false)
       json = {
         id: user.id,
         uuid: user.uuid,
@@ -61,22 +82,23 @@ module AdminAPI
         first_name: user.first_name,
         last_name: user.last_name,
         name: user.name,
-        admin: user.admin?,
-        time_zone: user.time_zone,
+        admin: user.admin,
         created_at: user.created_at&.iso8601,
         updated_at: user.updated_at&.iso8601
       }
 
+      if include_password && user.password_digest.present?
+        json[:password_digest] = user.password_digest
+      end
+
       if include_details
-        json[:organizations] = user.organizations.present.map do |org|
-          ou = user.organization_users.find_by(organization: org)
+        json[:organization_users] = user.organization_users.map do |ou|
           {
-            id: org.id,
-            uuid: org.uuid,
-            name: org.name,
-            permalink: org.permalink,
-            admin: ou&.admin,
-            all_servers: ou&.all_servers
+            id: ou.id,
+            uuid: ou.uuid,
+            organization_id: ou.organization_id,
+            organization_name: ou.organization.name,
+            role: ou.role
           }
         end
       end

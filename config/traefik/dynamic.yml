@@ -1,0 +1,7 @@
+# Traefik Dynamic Configuration
+# TLS Certificates for local development
+
+tls:
+  certificates:
+    - certFile: /certs/postal.example.com.crt
+      keyFile: /certs/postal.example.com.key

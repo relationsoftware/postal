@@ -25,7 +25,7 @@ RSpec.describe "Admin API - Endpoints", type: :request do
 
     describe "POST /api/v2/admin/organizations/:org/servers/:server/http_endpoints" do
       it "creates a new HTTP endpoint" do
-        expect {
+        expect do
           post "/api/v2/admin/organizations/#{organization.permalink}/servers/#{server.permalink}/http_endpoints",
                params: {
                  name: "New Webhook",
@@ -35,7 +35,7 @@ RSpec.describe "Admin API - Endpoints", type: :request do
                  timeout: 30
                }.to_json,
                headers: json_headers
-        }.to change(HTTPEndpoint, :count).by(1)
+        end.to change(HTTPEndpoint, :count).by(1)
 
         expect(response.status).to eq(201)
         expect_success
@@ -62,10 +62,10 @@ RSpec.describe "Admin API - Endpoints", type: :request do
       let!(:endpoint) { create(:http_endpoint, server: server) }
 
       it "deletes the HTTP endpoint" do
-        expect {
+        expect do
           delete "/api/v2/admin/organizations/#{organization.permalink}/servers/#{server.permalink}/http_endpoints/#{endpoint.uuid}",
                  headers: auth_headers
-        }.to change(HTTPEndpoint, :count).by(-1)
+        end.to change(HTTPEndpoint, :count).by(-1)
 
         expect(response.status).to eq(200)
       end
@@ -88,7 +88,7 @@ RSpec.describe "Admin API - Endpoints", type: :request do
 
     describe "POST /api/v2/admin/organizations/:org/servers/:server/smtp_endpoints" do
       it "creates a new SMTP endpoint" do
-        expect {
+        expect do
           post "/api/v2/admin/organizations/#{organization.permalink}/servers/#{server.permalink}/smtp_endpoints",
                params: {
                  name: "New SMTP",
@@ -97,7 +97,7 @@ RSpec.describe "Admin API - Endpoints", type: :request do
                  ssl_mode: "STARTTLS"
                }.to_json,
                headers: json_headers
-        }.to change(SMTPEndpoint, :count).by(1)
+        end.to change(SMTPEndpoint, :count).by(1)
 
         expect(response.status).to eq(201)
         expect_success
@@ -125,10 +125,10 @@ RSpec.describe "Admin API - Endpoints", type: :request do
       let!(:endpoint) { create(:smtp_endpoint, server: server) }
 
       it "deletes the SMTP endpoint" do
-        expect {
+        expect do
           delete "/api/v2/admin/organizations/#{organization.permalink}/servers/#{server.permalink}/smtp_endpoints/#{endpoint.uuid}",
                  headers: auth_headers
-        }.to change(SMTPEndpoint, :count).by(-1)
+        end.to change(SMTPEndpoint, :count).by(-1)
 
         expect(response.status).to eq(200)
       end
@@ -151,11 +151,11 @@ RSpec.describe "Admin API - Endpoints", type: :request do
 
     describe "POST /api/v2/admin/organizations/:org/servers/:server/address_endpoints" do
       it "creates a new address endpoint" do
-        expect {
+        expect do
           post "/api/v2/admin/organizations/#{organization.permalink}/servers/#{server.permalink}/address_endpoints",
                params: { address: "forward@example.com" }.to_json,
                headers: json_headers
-        }.to change(AddressEndpoint, :count).by(1)
+        end.to change(AddressEndpoint, :count).by(1)
 
         expect(response.status).to eq(201)
         expect_success
@@ -180,10 +180,10 @@ RSpec.describe "Admin API - Endpoints", type: :request do
       let!(:endpoint) { create(:address_endpoint, server: server) }
 
       it "deletes the address endpoint" do
-        expect {
+        expect do
           delete "/api/v2/admin/organizations/#{organization.permalink}/servers/#{server.permalink}/address_endpoints/#{endpoint.uuid}",
                  headers: auth_headers
-        }.to change(AddressEndpoint, :count).by(-1)
+        end.to change(AddressEndpoint, :count).by(-1)
 
         expect(response.status).to eq(200)
       end

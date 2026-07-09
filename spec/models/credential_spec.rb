@@ -8,8 +8,16 @@ RSpec.describe Credential, type: :model do
   describe "validations" do
     it { should belong_to(:server) }
     it { should validate_presence_of(:name) }
-    it { should validate_presence_of(:key) }
     it { should validate_inclusion_of(:type).in_array(Credential::TYPES) }
+
+    # SMTP credential keys are auto-generated (before_validation :generate_key),
+    # so presence is always satisfied and a provided key is overwritten - hence
+    # these behaviours are tested explicitly rather than via shoulda matchers.
+    it "auto-generates a key for SMTP credentials when blank" do
+      credential = build(:credential, server: server, type: "SMTP", key: nil)
+      credential.valid?
+      expect(credential.key).to be_present
+    end
 
     context "key uniqueness" do
       context "for SMTP credentials" do
@@ -17,7 +25,10 @@ RSpec.describe Credential, type: :model do
 
         it "validates global uniqueness" do
           other_server = create(:server)
-          credential = build(:credential, server: other_server, type: "SMTP", key: existing.key)
+          credential = build(:credential, server: other_server, type: "SMTP")
+          # Prevent auto-generation so the duplicate key under test survives.
+          allow(credential).to receive(:generate_key)
+          credential.key = existing.key
           expect(credential).not_to be_valid
           expect(credential.errors[:key]).to include("has already been taken")
         end
@@ -60,7 +71,6 @@ RSpec.describe Credential, type: :model do
     context "key cannot be changed" do
       it "prevents key change for SMTP credentials" do
         credential = create(:credential, server: server, type: "SMTP")
-        original_key = credential.key
         credential.key = "newkey123"
         expect(credential).not_to be_valid
         expect(credential.errors[:key]).to include("cannot be changed")

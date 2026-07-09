@@ -1,0 +1,27 @@
+- page_title << "Admin API Keys"
+.pageHeader
+  %h1.pageHeader__title
+    Admin API Keys
+
+.pageContent.pageContent--compact
+  - if flash[:notice]
+    .flash.flash--notice.u-margin
+      %p= flash[:notice]
+
+  %ul.userList.u-margin
+    - for key in @keys
+      %li.userList__item
+        .userList__details
+          %p.userList__name
+            = key.name
+            %span.userList__tag.label.label--blue Admin API Key
+          %p.userList__email
+            Key: #{key.key.sub(/.(.{4})$/, '••••\1')}
+            - if key.last_used_at
+              (Last used #{time_ago_in_words(key.last_used_at)} ago)
+            - else
+              (Never used)
+        %ul.userList__actions
+          %li= link_to "Delete", admin_api_key_path(key), :method => :delete, :data => {:confirm => "Are you sure you wish to delete this API key?", :disable_with => "Deleting..."}, :class => 'userList__revoke'
+
+  %p.u-center= link_to "Generate new Admin API Key", new_admin_api_key_path, :class => 'button button--positive'

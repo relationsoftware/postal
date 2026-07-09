@@ -179,6 +179,8 @@ class Route < ApplicationRecord
   end
 
   def validate_domain_belongs_to_server
+    return unless server
+
     if domain && ![server, server.organization].include?(domain.owner)
       errors.add :domain, :invalid
     end

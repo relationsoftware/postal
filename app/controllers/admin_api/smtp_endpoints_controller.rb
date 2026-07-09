@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module AdminAPI
-  class SmtpEndpointsController < BaseController
+  class SMTPEndpointsController < BaseController
 
     before_action :find_organization
     before_action :find_server

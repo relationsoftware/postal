@@ -2,6 +2,7 @@
 
 class UserController < ApplicationController
 
+  before_action :require_local_authentication, only: [:new, :create]
   skip_before_action :login_required, only: [:new, :create, :join]
 
   def new
@@ -57,6 +58,14 @@ class UserController < ApplicationController
     else
       render_form_errors "edit", @user
     end
+  end
+
+  private
+
+  def require_local_authentication
+    return if Postal::Config.oidc.local_authentication_enabled?
+
+    redirect_to login_path, alert: "Registration is restricted to SSO. Please login to continue."
   end
 
 end

@@ -31,7 +31,7 @@ class Webhook < ApplicationRecord
 
   validates :name, presence: true
   validates :url, presence: true, format: { with: /\Ahttps?:\/\/[a-z0-9\-._?=&\/+:%@]+\z/i, allow_blank: true }
-  validates :output_style, inclusion: { in: %w[postal listmonk], message: "%{value} is not a valid output style" }
+  validates :output_style, inclusion: { in: %w[postal listmonk], message: "%<value>s is not a valid output style" }
 
   scope :enabled, -> { where(enabled: true) }
 

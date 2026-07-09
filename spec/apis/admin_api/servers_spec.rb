@@ -49,10 +49,10 @@ RSpec.describe "Admin API - Servers", type: :request do
       end
 
       it "includes domains, credentials, routes, and webhooks" do
-        domain = create(:domain, owner: server)
-        credential = create(:credential, server: server)
-        route = create(:route, server: server)
-        webhook = create(:webhook, server: server)
+        create(:domain, owner: server)
+        create(:credential, server: server)
+        create(:route, server: server)
+        create(:webhook, server: server)
 
         get "/api/v2/admin/organizations/#{organization.permalink}/servers/#{server.permalink}",
             headers: auth_headers
@@ -75,11 +75,11 @@ RSpec.describe "Admin API - Servers", type: :request do
   describe "POST /api/v2/admin/organizations/:org/servers" do
     context "with valid authentication" do
       it "creates a new server" do
-        expect {
+        expect do
           post "/api/v2/admin/organizations/#{organization.permalink}/servers",
                params: { name: "New Server", mode: "Live" }.to_json,
                headers: json_headers
-        }.to change(Server, :count).by(1)
+        end.to change(Server, :count).by(1)
 
         expect(response.status).to eq(201)
         expect_success

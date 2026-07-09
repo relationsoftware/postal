@@ -177,3 +177,9 @@ Lint/UnusedMethodArgument:
 
 Style/SpecialGlobalVars:
   Enabled: false
+
+# This script is intentionally hyphenated to match its sibling
+# scripts/generate-openapi.sh; both are invoked by name from generate-openapi.sh.
+Naming/FileName:
+  Exclude:
+    - "scripts/post-process-openapi.rb"

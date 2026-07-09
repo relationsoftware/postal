@@ -55,13 +55,8 @@ module AdminAPI
     end
 
     def find_organization_user
-      @organization_user = @organization.organization_users
-                                        .joins(:user)
-                                        .find_by!(users: { uuid: params[:id] })
-    rescue ActiveRecord::RecordNotFound
-      @organization_user = @organization.organization_users
-                                        .joins(:user)
-                                        .find_by!(users: { email_address: params[:id] })
+      user = User.where(uuid: params[:id]).or(User.where(email_address: params[:id])).first!
+      @organization_user = @organization.organization_users.find_by!(user: user)
     end
 
     def organization_user_params

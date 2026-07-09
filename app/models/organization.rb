@@ -39,7 +39,7 @@ class Organization < ApplicationRecord
   default_value :time_zone, -> { "UTC" }
   default_value :permalink, -> { Organization.find_unique_permalink(name) if name }
 
-  belongs_to :owner, class_name: "User"
+  belongs_to :owner, class_name: "User", optional: true
   has_many :organization_users, dependent: :destroy
   has_many :users, through: :organization_users, source_type: "User"
   has_many :user_invites, through: :organization_users, source_type: "UserInvite", source: :user

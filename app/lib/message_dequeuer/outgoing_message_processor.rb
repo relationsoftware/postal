@@ -191,7 +191,8 @@ module MessageDequeuer
     end
 
     def cleanup_raw_message
-      return if queued_message.server.raw_message_retention_days.to_i > 0 && queued_message.server.raw_message_retention_size.to_i > 0
+      return if queued_message.server.raw_message_retention_days.to_i.positive? && queued_message.server.raw_message_retention_size.to_i.positive?
+
       queued_message.message.delete_raw_message
       log "raw message removed due to retention settings"
     end

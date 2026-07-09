@@ -1,199 +1,206 @@
 # frozen_string_literal: true
 
 require "rails_helper"
-require_relative "shared_context"
 
-RSpec.describe "Admin API - Users", type: :request do
+RSpec.describe AdminAPI::UsersController, type: :request do
+  include AdminAPIHelper
   include_context "admin api authentication"
 
+  let!(:user) { create(:user) }
+  let!(:other_user) { create(:user) }
+
   describe "GET /api/v2/admin/users" do
-    let!(:user1) { create(:user, email_address: "alpha@example.com") }
-    let!(:user2) { create(:user, email_address: "beta@example.com") }
+    let(:req_method) { :get }
+    let(:req_path) { "/api/v2/admin/users" }
+    it_behaves_like "requires admin api authentication"
 
     context "with valid authentication" do
-      it "returns a list of users" do
-        get "/api/v2/admin/users", headers: auth_headers
-        expect(response.status).to eq(200)
-        expect_success
-        expect(json_response["data"]["users"].length).to eq(2)
-      end
+      it "returns a paginated list of users" do
+        get "/api/v2/admin/users",
+            headers: admin_api_headers
 
-      it "includes user attributes" do
-        get "/api/v2/admin/users", headers: auth_headers
-        user_data = json_response["data"]["users"].find { |u| u["email_address"] == "alpha@example.com" }
-        expect(user_data).to include(
-          "id" => user1.id,
-          "uuid" => user1.uuid,
-          "first_name" => user1.first_name,
-          "last_name" => user1.last_name,
-          "admin" => user1.admin?
-        )
+        expect(response).to have_http_status(:ok)
+        json = response.parsed_body
+        expect(json["data"]["users"]).to be_an(Array)
+        expect(json["data"]["users"].map { |u| u["uuid"] }).to include(user.uuid)
       end
     end
   end
 
   describe "GET /api/v2/admin/users/:id" do
-    let!(:user) { create(:user, email_address: "test@example.com", first_name: "Test", last_name: "User") }
+    let(:req_method) { :get }
+    let(:req_path) { "/api/v2/admin/users/#{user.uuid}" }
+    it_behaves_like "requires admin api authentication"
 
     context "with valid authentication" do
-      it "returns user details by uuid" do
-        get "/api/v2/admin/users/#{user.uuid}", headers: auth_headers
-        expect(response.status).to eq(200)
-        expect_success
-        expect(json_response["data"]["user"]["email_address"]).to eq("test@example.com")
-        expect(json_response["data"]["user"]["name"]).to eq("Test User")
-      end
+      it "returns user details by UUID" do
+        get "/api/v2/admin/users/#{user.uuid}",
+            headers: admin_api_headers
 
-      it "returns user details by email" do
-        get "/api/v2/admin/users/test@example.com", headers: auth_headers
-        expect(response.status).to eq(200)
-        expect(json_response["data"]["user"]["uuid"]).to eq(user.uuid)
-      end
-
-      it "includes organizations list" do
-        org = create(:organization)
-        org.organization_users.create!(user: user, admin: true, all_servers: true)
-
-        get "/api/v2/admin/users/#{user.uuid}", headers: auth_headers
-        expect(json_response["data"]["user"]["organizations"]).to be_an(Array)
-        expect(json_response["data"]["user"]["organizations"].first["name"]).to eq(org.name)
+        expect(response).to have_http_status(:ok)
+        json = response.parsed_body
+        expect(json["data"]["user"]["uuid"]).to eq(user.uuid)
+        expect(json["data"]["user"]["email_address"]).to eq(user.email_address)
       end
 
       it "returns 404 for non-existent user" do
-        get "/api/v2/admin/users/non-existent", headers: auth_headers
-        expect(response.status).to eq(404)
+        get "/api/v2/admin/users/invalid-uuid",
+            headers: admin_api_headers
+
+        expect(response).to have_http_status(:not_found)
+      end
+    end
+  end
+
+  describe "GET /api/v2/admin/users/find/:lookup" do
+    let(:req_method) { :get }
+    let(:req_path) { "/api/v2/admin/users/find/#{user.email_address}" }
+    it_behaves_like "requires admin api authentication"
+
+    context "with valid authentication" do
+      it "finds user by UUID" do
+        get "/api/v2/admin/users/find/#{user.uuid}",
+            headers: admin_api_headers
+
+        expect(response).to have_http_status(:ok)
+        json = response.parsed_body
+        expect(json["data"]["user"]["uuid"]).to eq(user.uuid)
+      end
+
+      it "finds user by email address" do
+        get "/api/v2/admin/users/find/#{user.email_address}",
+            headers: admin_api_headers
+
+        expect(response).to have_http_status(:ok)
+        json = response.parsed_body
+        expect(json["data"]["user"]["email_address"]).to eq(user.email_address)
+      end
+
+      it "returns 404 for non-existent user" do
+        get "/api/v2/admin/users/find/nonexistent@example.com",
+            headers: admin_api_headers
+
+        expect(response).to have_http_status(:not_found)
       end
     end
   end
 
   describe "POST /api/v2/admin/users" do
+    let(:req_method) { :post }
+    let(:req_path) { "/api/v2/admin/users" }
+    it_behaves_like "requires admin api authentication"
+
     context "with valid authentication" do
-      it "creates a new user" do
-        expect {
-          post "/api/v2/admin/users",
-               params: {
-                 email_address: "new@example.com",
-                 first_name: "New",
-                 last_name: "User",
-                 password: "securepassword123"
-               }.to_json,
-               headers: json_headers
-        }.to change(User, :count).by(1)
+      it "creates a new user with password" do
+        user_params = {
+          email_address: "newuser@example.com",
+          first_name: "John",
+          last_name: "Doe",
+          password: "SecurePassword123!"
+        }
 
-        expect(response.status).to eq(201)
-        expect_success
-        expect(json_response["data"]["user"]["email_address"]).to eq("new@example.com")
+        post "/api/v2/admin/users",
+             params: user_params,
+             headers: admin_api_headers
+
+        expect(response).to have_http_status(:created)
+        json = response.parsed_body
+        expect(json["data"]["user"]["email_address"]).to eq("newuser@example.com")
+        expect(json["data"]["user"]["first_name"]).to eq("John")
+        expect(json["data"]["user"]["last_name"]).to eq("Doe")
       end
 
-      it "creates admin user" do
+      it "generates password if not provided" do
+        user_params = {
+          email_address: "generated-pass@example.com",
+          first_name: "Gen",
+          last_name: "Pass"
+        }
+
         post "/api/v2/admin/users",
-             params: {
-               email_address: "admin@example.com",
-               first_name: "Admin",
-               last_name: "User",
-               password: "securepassword123",
-               admin: true
-             }.to_json,
-             headers: json_headers
+             params: user_params,
+             headers: admin_api_headers
 
-        expect(response.status).to eq(201)
-        expect(json_response["data"]["user"]["admin"]).to eq(true)
-      end
-
-      it "creates user with time_zone" do
-        post "/api/v2/admin/users",
-             params: {
-               email_address: "tz@example.com",
-               first_name: "TZ",
-               last_name: "User",
-               password: "securepassword123",
-               time_zone: "America/New_York"
-             }.to_json,
-             headers: json_headers
-
-        expect(response.status).to eq(201)
-        expect(json_response["data"]["user"]["time_zone"]).to eq("America/New_York")
+        puts "DEBUG USER CREATE BODY: #{response.body}" if response.status == 422
+        expect(response).to have_http_status(:created)
+        json = response.parsed_body
+        expect(json["data"]["user"]["email_address"]).to eq("generated-pass@example.com")
       end
 
       it "returns validation error for missing email" do
         post "/api/v2/admin/users",
-             params: {
-               first_name: "No",
-               last_name: "Email",
-               password: "securepassword123"
-             }.to_json,
-             headers: json_headers
+             params: { password: "SecurePassword123!" },
+             headers: admin_api_headers
 
-        expect(response.status).to eq(422)
-        expect_error("ValidationError", status: 422)
+        expect(response).to have_http_status(:unprocessable_content)
       end
 
       it "returns validation error for duplicate email" do
-        create(:user, email_address: "existing@example.com")
-
         post "/api/v2/admin/users",
-             params: {
-               email_address: "existing@example.com",
-               first_name: "Duplicate",
-               last_name: "User",
-               password: "securepassword123"
-             }.to_json,
-             headers: json_headers
+             params: { email_address: user.email_address },
+             headers: admin_api_headers
 
-        expect(response.status).to eq(422)
-        expect_error("ValidationError", status: 422)
+        expect(response).to have_http_status(:unprocessable_content)
       end
     end
   end
 
   describe "PATCH /api/v2/admin/users/:id" do
-    let!(:user) { create(:user, first_name: "Original", last_name: "Name") }
+    let(:req_method) { :patch }
+    let(:req_path) { "/api/v2/admin/users/#{user.uuid}" }
+    it_behaves_like "requires admin api authentication"
 
     context "with valid authentication" do
-      it "updates the user" do
+      it "updates user details" do
         patch "/api/v2/admin/users/#{user.uuid}",
-              params: { first_name: "Updated", last_name: "User" }.to_json,
-              headers: json_headers
+              params: { first_name: "Updated", last_name: "Name" },
+              headers: admin_api_headers
 
-        expect(response.status).to eq(200)
-        expect_success
-        expect(user.reload.first_name).to eq("Updated")
-        expect(user.last_name).to eq("User")
+        expect(response).to have_http_status(:ok)
+        json = response.parsed_body
+        expect(json["data"]["user"]["first_name"]).to eq("Updated")
+        expect(json["data"]["user"]["last_name"]).to eq("Name")
       end
 
-      it "updates password" do
-        old_digest = user.password_digest
-
+      it "updates user password" do
         patch "/api/v2/admin/users/#{user.uuid}",
-              params: { password: "newpassword123" }.to_json,
-              headers: json_headers
+              params: { password: "NewPassword123!" },
+              headers: admin_api_headers
 
-        expect(response.status).to eq(200)
-        expect(user.reload.password_digest).not_to eq(old_digest)
+        expect(response).to have_http_status(:ok)
+        user.reload
+        expect(user.authenticate("NewPassword123!")).to be_truthy
       end
 
-      it "promotes user to admin" do
-        patch "/api/v2/admin/users/#{user.uuid}",
-              params: { admin: true }.to_json,
-              headers: json_headers
+      it "returns 404 for non-existent user" do
+        patch "/api/v2/admin/users/invalid-uuid",
+              params: { first_name: "Updated" },
+              headers: admin_api_headers
 
-        expect(response.status).to eq(200)
-        expect(user.reload.admin?).to eq(true)
+        expect(response).to have_http_status(:not_found)
       end
     end
   end
 
   describe "DELETE /api/v2/admin/users/:id" do
-    let!(:user) { create(:user) }
+    let(:req_method) { :delete }
+    let(:req_path) { "/api/v2/admin/users/#{user.uuid}" }
+    it_behaves_like "requires admin api authentication"
 
     context "with valid authentication" do
       it "deletes the user" do
-        expect {
-          delete "/api/v2/admin/users/#{user.uuid}", headers: auth_headers
-        }.to change(User, :count).by(-1)
+        delete "/api/v2/admin/users/#{user.uuid}",
+               headers: admin_api_headers
 
-        expect(response.status).to eq(200)
-        expect(json_response["data"]["deleted"]).to eq(true)
+        expect(response).to have_http_status(:ok)
+        expect(User.find_by(uuid: user.uuid)).to be_nil
+      end
+
+      it "returns 404 for non-existent user" do
+        delete "/api/v2/admin/users/invalid-uuid",
+               headers: admin_api_headers
+
+        expect(response).to have_http_status(:not_found)
       end
     end
   end

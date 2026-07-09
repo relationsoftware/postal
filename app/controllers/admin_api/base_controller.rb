@@ -33,22 +33,26 @@ module AdminAPI
         return
       end
 
-      # Check if the key matches the configured admin API key
+      # 1. Check if the key exists in our database
+      @admin_api_key = ::AdminAPIKey.find_by(key: key)
+      if @admin_api_key
+        @admin_api_key.use
+        @authenticated = true
+        return
+      end
+
+      # 2. Fallback to the configured global admin API key for backward compatibility
       configured_key = Postal::Config.postal.admin_api_key
-      if configured_key.blank?
-        render_error "Unauthorized", message: "Admin API is not configured", status: 401
+      if configured_key.present? && ActiveSupport::SecurityUtils.secure_compare(key, configured_key)
+        @authenticated = true
         return
       end
 
-      unless ActiveSupport::SecurityUtils.secure_compare(key, configured_key)
-        render_error "Unauthorized", message: "Invalid API key", status: 401
-        return
-      end
-
-      @authenticated = true
+      # 3. If neither worked, it's an error
+      render_error "Unauthorized", message: "Invalid API key", status: 401
     end
 
-    def render_success(data, status: 200)
+    def render_success(status: 200, **data)
       render json: {
         status: "success",
         time: elapsed_time,
@@ -56,8 +60,8 @@ module AdminAPI
       }, status: status
     end
 
-    def render_created(data)
-      render_success(data, status: 201)
+    def render_created(**data)
+      render_success(status: 201, **data)
     end
 
     def render_deleted

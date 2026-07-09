@@ -1,0 +1,83 @@
+---
+title: Pre-requisites
+description: ''
+position: 2.0
+category: Installation
+---
+
+There are some things you'll need to do before you can install Postal.
+
+## Servers
+
+We **strongly** recommend installing Postal on its own dedicated server (i.e. a server running no other software). The minimum specification for Postal is as follows:
+
+* At least 4GB of RAM
+* At least 2 CPU cores
+* An appropriate amount of disk space (at least 25GB) for your use case
+
+Most people install Postal on virtual servers. There are lots of providers to choose from including [Digital Ocean](https://m.do.co/c/17696597a9ed) and [Linode](https://www.linode.com) however you may find that the IP address given to you is already on blocklists so it may take additional testing to find a provider that is right for you.
+
+One thing to be aware of is you'll need to ensure that your provider does not block port 25 outbound. This is quite common and is used to prevent abuse from spammers.
+
+It doesn't matter what operating system you choose as long as you are able to install Docker on it (see next section). Nothing in these instructions will make assumptions about your operating system.
+
+## Docker
+
+Postal runs entirely using containers which means to run Postal you'll need some software to run these containers. We recommend using Docker for this purpose but you can use whatever software you wish.
+
+You'll need to install Docker Engine on your server to begin with. [Follow the instructions on the Docker website](https://docs.docker.com/engine/install/) to install Docker.
+
+You'll also need to ensure you have the [Docker Compose plugin](https://docs.docker.com/compose/install/linux/) installed.
+
+Before continuing ensure that you can run both `docker` and `docker compose` from your prompt.
+
+## System utilities
+
+There are a few system utilities that you need to have installed before you'll be able to run some of the Postal commands.
+
+On Ubuntu/Debian:
+
+```
+apt install git curl jq
+```
+
+On CentOS/RHEL:
+
+```
+yum install git curl jq
+```
+
+## Git & installation helper repository
+
+You'll need to make sure you have `git` installed on your server. You'll then need to clone the Postal installation helper repository. This contains some bootstrapping config and other useful things which will speed along your installation.
+
+```
+git clone https://github.com/postalserver/install /opt/postal/install
+sudo ln -s /opt/postal/install/bin/postal /usr/bin/postal
+```
+
+## MariaDB (10.6 or higher)
+
+Postal requires a database engine to store all email and other essential configuration data. You will need to provide credentials that allow full access to create and delete databases as well as having full access to any databases created. Postal will provision a database automatically for each mail server that you create.
+
+We do not support using MySQL in place of MariaDB.
+
+You can run MariaDB in a container, assuming you have Docker, using this command:
+
+```
+docker run -d \
+   --name postal-mariadb \
+   -p 127.0.0.1:3306:3306 \
+   --restart always \
+   -e MARIADB_DATABASE=postal \
+   -e MARIADB_ROOT_PASSWORD=postal \
+   mariadb
+```
+
+* This will run a MariaDB instance and have it listen on port 3306.
+* Be sure to choose a secure password. You'll need to put this in your Postal configuration when you install it so be sure to make a (secure) note of it.
+* If you are unable or unwilling to grant root access, the database user you create separately needs all permissions on databases called `postal` and `postal-*` (this prefix can be configured in the `message_db` part of your configuration).
+
+::callout{icon="i-heroicons-information-circle"}
+Whilst you can configure the maximum message size however you wish, you will need to verify that MariaDB is configured with <code>innodb_log_file_size</code> to at least 10 times the biggest message you wish to send (150MB for 15MB email, 250MB for 25MB email, etc).<br><br>If you have a legacy v1 database you might also want to check that raw tables in the database have the type <code>LONGBLOB</code>.
+::

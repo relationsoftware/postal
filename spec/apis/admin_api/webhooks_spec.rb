@@ -55,7 +55,7 @@ RSpec.describe "Admin API - Webhooks", type: :request do
   describe "POST /api/v2/admin/organizations/:org/servers/:server/webhooks" do
     context "with valid authentication" do
       it "creates a new webhook" do
-        expect {
+        expect do
           post "/api/v2/admin/organizations/#{organization.permalink}/servers/#{server.permalink}/webhooks",
                params: {
                  name: "New Webhook",
@@ -64,7 +64,7 @@ RSpec.describe "Admin API - Webhooks", type: :request do
                  all_events: true
                }.to_json,
                headers: json_headers
-        }.to change(Webhook, :count).by(1)
+        end.to change(Webhook, :count).by(1)
 
         expect(response.status).to eq(201)
         expect_success
@@ -78,7 +78,7 @@ RSpec.describe "Admin API - Webhooks", type: :request do
                name: "Event Webhook",
                url: "https://example.com/events",
                all_events: false,
-               events: ["MessageSent", "MessageDelivered", "MessageBounced"]
+               events: %w[MessageSent MessageDelivered MessageBounced]
              }.to_json,
              headers: json_headers
 
@@ -133,10 +133,10 @@ RSpec.describe "Admin API - Webhooks", type: :request do
 
     context "with valid authentication" do
       it "deletes the webhook" do
-        expect {
+        expect do
           delete "/api/v2/admin/organizations/#{organization.permalink}/servers/#{server.permalink}/webhooks/#{webhook.uuid}",
                  headers: auth_headers
-        }.to change(Webhook, :count).by(-1)
+        end.to change(Webhook, :count).by(-1)
 
         expect(response.status).to eq(200)
         expect(json_response["data"]["deleted"]).to eq(true)

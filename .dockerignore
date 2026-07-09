@@ -1,19 +1,39 @@
-.byebug_history
-.cache
+# Version control / tooling
+.git
 .git/*
 .github/*
 .vscode/*
 .yardoc/*
+.byebug_history
+.cache
+
+# Bundler / deps (installed inside the image)
 /.bundle
-config/postal/*
-doc/*
-Dockerfile
-log/*
+vendor/bundle
 node_modules
+
+# Build / runtime artefacts (not needed in the image)
+public/assets
+log/*
+tmp/*
+storage/*
+coverage/*
+*.log
+
+# Local config & process files
+config/postal/*
 Procfile.local
 Procfile*
-public/assets
-storage/*
-tmp/*
-vendor/bundle
-vendor/bundle
+.env
+.env.*
+
+# Tests, docs and ops tooling - changing these must NOT invalidate the image
+# build cache, so they are excluded from the build context entirely.
+spec/*
+docs/*
+scripts/*
+Dockerfile
+docker-compose*.yml
+Makefile
+.rubocop.yml
+*.md

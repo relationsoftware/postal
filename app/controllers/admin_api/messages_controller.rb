@@ -10,18 +10,17 @@ module AdminAPI
     # GET /api/v2/admin/organizations/:organization_id/servers/:server_id/messages
     def index
       scope = params[:scope] || "all"
-      status = params[:status]
 
-      messages = case scope
-                 when "incoming"
-                   @server.message_db.messages(scope: "incoming", **message_query_params)
-                 when "outgoing"
-                   @server.message_db.messages(scope: "outgoing", **message_query_params)
-                 when "held"
-                   @server.message_db.messages(where: { status: "Held" }, **message_query_params)
-                 else
-                   @server.message_db.messages(**message_query_params)
-                 end
+      case scope
+      when "incoming"
+        messages = @server.message_db.messages(scope: "incoming", **message_query_params)
+      when "outgoing"
+        messages = @server.message_db.messages(scope: "outgoing", **message_query_params)
+      when "held"
+        messages = @server.message_db.messages(where: { status: "Held" }, **message_query_params)
+      else
+        messages = @server.message_db.messages(**message_query_params)
+      end
 
       render_success(
         messages: messages.map { |m| message_json(m) },

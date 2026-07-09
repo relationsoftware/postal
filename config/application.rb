@@ -33,12 +33,23 @@ module Postal
     # Include from lib
     config.eager_load_paths << Rails.root.join("lib")
 
+    # Zeitwerk configuration to handle naming mismatches
+    config.autoloader = :zeitwerk
+    if respond_to?(:config) && config.respond_to?(:autoloaders) && ENV.fetch("DEBUG_AUTOLOADER", nil)
+      config.autoloaders.log!
+    end
+
     # Disable field_with_errors
     config.action_view.field_error_proc = proc { |t, _| t }
 
     # Load the tracking server middleware
     require "tracking_middleware"
-    config.middleware.insert_before ActionDispatch::HostAuthorization, TrackingMiddleware
+    # Insert before HostAuthorization if it exists, otherwise use a different position
+    if config.middleware.respond_to?(:include?) && config.middleware.include?(ActionDispatch::HostAuthorization)
+      config.middleware.insert_before ActionDispatch::HostAuthorization, TrackingMiddleware
+    else
+      config.middleware.use TrackingMiddleware
+    end
 
     config.hosts << Postal::Config.postal.web_hostname
 

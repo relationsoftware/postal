@@ -2,6 +2,10 @@
 
 module Postal
   module MessageDB
+
+    module Migrations
+    end
+
     class Migration
 
       def initialize(database)
@@ -32,8 +36,8 @@ module Postal
           klass_name = file.gsub(/\.rb\z/, "").camelize
           next if start_from >= version
 
-          puts "\e[45m++ Migrating #{klass_name} (#{version})\e[0m" unless silent
-          require "postal/message_db/migrations/#{version.to_s.rjust(2, '0')}_#{file}"
+          path = Rails.root.join("lib", "postal", "message_db", "migrations", "#{version.to_s.rjust(2, '0')}_#{file}")
+          load path
           klass = Postal::MessageDB::Migrations.const_get(klass_name)
           instance = klass.new(database)
           instance.up
@@ -42,5 +46,6 @@ module Postal
       end
 
     end
+
   end
 end

@@ -1,0 +1,175 @@
+version: "3.9"
+
+services:
+  mariadb:
+    image: mariadb:10.6
+    container_name: postal-mariadb-dev
+    restart: unless-stopped
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:-postal}
+      MARIADB_DATABASE: postal
+    volumes:
+      - mariadb-data-dev:/var/lib/mysql
+    ports:
+      - "127.0.0.1:3309:3306"
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  traefik:
+    image: traefik:v3.3
+    container_name: postal-traefik-dev
+    restart: unless-stopped
+    command:
+      - "--api.insecure=true"
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.smtp.address=:25"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "25:25"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config/certs:/certs:ro
+      - ./config/traefik:/etc/traefik/dynamic:ro
+    labels:
+      - "traefik.enable=true"
+      # Traefik Dashboard at /traefik-dashboard
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`postal.example.com`) && PathPrefix(`/dashboard`)"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dashboard.tls=true"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-dashboard.priority=10"
+    networks:
+      - default
+
+  web:
+    image: postal:dev-local
+    container_name: postal-web-dev
+    command: postal web-server
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      traefik:
+        condition: service_started
+    environment:
+      WAIT_FOR_TARGETS: mariadb:3306
+      WAIT_FOR_TIMEOUT: 60
+    volumes:
+      - ./:/opt/postal/app
+      - ./config:/config:ro
+    labels:
+      - "traefik.enable=true"
+      # HTTPS Router (primary)
+      - "traefik.http.routers.postal-web.rule=Host(`postal.example.com`)"
+      - "traefik.http.routers.postal-web.entrypoints=websecure"
+      - "traefik.http.routers.postal-web.tls=true"
+      - "traefik.http.routers.postal-web.priority=1"
+      - "traefik.http.services.postal-web.loadbalancer.server.port=5000"
+    restart: unless-stopped
+
+  smtp:
+    image: postal:dev-local
+    container_name: postal-smtp-dev
+    command: postal smtp-server
+    depends_on:
+      mariadb:
+        condition: service_healthy
+      traefik:
+        condition: service_started
+    environment:
+      WAIT_FOR_TARGETS: mariadb:3306
+      WAIT_FOR_TIMEOUT: 60
+    cap_add:
+      - NET_BIND_SERVICE
+    volumes:
+      - ./:/opt/postal/app
+      - ./config:/config:ro
+    labels:
+      - "traefik.enable=true"
+      # TCP Router for SMTP
+      - "traefik.tcp.routers.postal-smtp.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.postal-smtp.entrypoints=smtp"
+      - "traefik.tcp.services.postal-smtp.loadbalancer.server.port=25"
+    restart: unless-stopped
+
+  worker:
+    image: postal:dev-local
+    container_name: postal-worker-dev
+    command: postal worker
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      WAIT_FOR_TARGETS: mariadb:3306
+      WAIT_FOR_TIMEOUT: 60
+    volumes:
+      - ./:/opt/postal/app
+      - ./config:/config:ro
+    restart: unless-stopped
+
+  runner:
+    profiles: ["tools"]
+    image: postal:dev-local
+    container_name: postal-runner-dev
+    command: postal
+    depends_on:
+      mariadb:
+        condition: service_healthy
+    environment:
+      WAIT_FOR_TARGETS: mariadb:3306
+      WAIT_FOR_TIMEOUT: 60
+    volumes:
+      - ./:/opt/postal/app
+      - ./config:/config:ro
+
+  # OpenAPI spec file server (lightweight static file server)
+  openapi-server:
+    image: joseluisq/static-web-server:2
+    container_name: postal-openapi-server-dev
+    environment:
+      SERVER_PORT: 8080
+      SERVER_ROOT: /public
+    volumes:
+      - ./public/openapi:/public/openapi:ro
+    labels:
+      - "traefik.enable=true"
+      # Serve OpenAPI spec files at /openapi
+      - "traefik.http.routers.postal-openapi.rule=Host(`postal.example.com`) && PathPrefix(`/openapi`)"
+      - "traefik.http.routers.postal-openapi.entrypoints=websecure"
+      - "traefik.http.routers.postal-openapi.tls=true"
+      - "traefik.http.routers.postal-openapi.priority=10"
+      - "traefik.http.services.postal-openapi.loadbalancer.server.port=8080"
+    restart: unless-stopped
+
+  swagger:
+    image: swaggerapi/swagger-ui
+    container_name: postal-swagger-dev
+    environment:
+      URLS: "[{ url: 'https://postal.example.com/openapi/postal-admin-api.yaml', name: 'Admin API' }, { url: 'https://postal.example.com/openapi/postal-api.yml', name: 'Mail API' }]"
+      BASE_URL: /swagger
+    labels:
+      - "traefik.enable=true"
+      # HTTPS Router for Swagger at /swagger path
+      - "traefik.http.routers.postal-swagger.rule=Host(`postal.example.com`) && PathPrefix(`/swagger`)"
+      - "traefik.http.routers.postal-swagger.entrypoints=websecure"
+      - "traefik.http.routers.postal-swagger.tls=true"
+      - "traefik.http.routers.postal-swagger.priority=20"
+      - "traefik.http.services.postal-swagger.loadbalancer.server.port=8080"
+    depends_on:
+      - openapi-server
+    restart: unless-stopped
+
+volumes:
+  mariadb-data-dev:
+  traefik-certs-dev:

@@ -63,7 +63,7 @@ module AdminAPI
     end
 
     def track_domain_params
-      params.permit(:name, :ssl_enabled, :track_clicks, :track_loads)
+      params.permit(:name, :domain_id, :ssl_enabled, :track_clicks, :track_loads)
     end
 
     def track_domain_json(track_domain, include_details: false)

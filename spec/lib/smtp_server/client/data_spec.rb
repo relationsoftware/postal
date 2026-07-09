@@ -8,6 +8,13 @@ module SMTPServer
     let(:ip_address) { "1.2.3.4" }
     subject(:client) { described_class.new(ip_address) }
 
+    # The Received header includes the reverse-resolved hostname of the client
+    # IP. DNS is stubbed suite-wide (hermetic), so make the reverse lookup for
+    # this IP deterministic for the header assertions below.
+    before do
+      allow(DNSResolver.local).to receive(:ip_to_hostname).with(ip_address).and_return(ip_address)
+    end
+
     describe "DATA" do
       it "returns an error if no helo" do
         expect(client.handle("DATA")).to eq "503 HELO/EHLO, MAIL FROM and RCPT TO before sending data"

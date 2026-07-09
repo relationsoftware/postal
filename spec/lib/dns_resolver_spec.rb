@@ -2,7 +2,11 @@
 
 require "rails_helper"
 
-RSpec.describe DNSResolver do
+# Tagged :external_dns - these are deliberate end-to-end tests that query real
+# external authoritative nameservers (UDP/53). GitHub-hosted runners block
+# direct DNS to arbitrary external nameservers, so CI excludes this tag
+# (rspec --tag ~external_dns). Runs normally in environments with real DNS.
+RSpec.describe DNSResolver, :external_dns do
   subject(:resolver) { described_class.local }
 
   # Now, we could mock everything in here which would give us some comfort

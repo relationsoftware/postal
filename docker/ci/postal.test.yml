@@ -1,0 +1,45 @@
+version: 2
+
+postal:
+  web_hostname: localhost
+  web_protocol: http
+  smtp_hostname: localhost
+  # Committed test-only DKIM key (see docker/ci/signing.key). Set explicitly so
+  # it resolves regardless of the (read-only mounted) config file location.
+  signing_key_path: /config/signing.key
+
+main_db:
+  host: mariadb
+  username: root
+  password: postal
+  database: postal
+
+message_db:
+  host: mariadb
+  username: root
+  password: postal
+  prefix: postal
+
+smtp_server:
+  default_bind_address: "::"
+
+smtp_client:
+  open_timeout: 1
+  read_timeout: 1
+
+dns:
+  mx_records:
+    - mx.example.com
+  spf_include: spf.example.com
+  return_path_domain: rp.example.com
+  route_domain: routes.example.com
+  track_domain: track.example.com
+
+smtp:
+  host: 127.0.0.1
+  port: 2525
+  from_name: Postal
+  from_address: postal@example.com
+
+rails:
+  secret_key: test-secret-key-for-testing-only-not-for-production

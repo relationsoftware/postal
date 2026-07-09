@@ -80,8 +80,8 @@ module HasDNSChecks
     records = resolver.txt(domain)
     if records.empty?
       records = resolver.cname(domain)
-      if (!records.empty? && records.size == 1 && level < 10)
-        return check_dkim_record_recursive(originaldomain, records.first, level+1)
+      if !records.empty? && records.size == 1 && level < 10
+        check_dkim_record_recursive(originaldomain, records.first, level + 1)
       else
         self.dkim_status = "Missing"
         self.dkim_error = "No TXT records were returned for #{originaldomain}"
